@@ -17,9 +17,14 @@ def inspect(root):
             findings.append(finding('migration.symlink', folder, 'Ambiguous version directory', 'Inspect the exact historical directory manually'))
             continue
         ledger = folder / 'BACKLOG.md'
+        ledger_name = ledger.relative_to(root).as_posix()
+        try:
+            safe(root, ledger_name)
+        except Invalid:
+            findings.append(finding('migration.symlink', ledger_name, 'Unsafe legacy ledger target', 'Inspect the exact historical ledger manually'))
+            continue
         if not ledger.is_file():
             continue
-        ledger_name = ledger.relative_to(root).as_posix()
         text = ledger.read_text()
         headings = list(re.finditer(r'^## \[([^\]]+)\]\s*$|^### (.+)$', text, re.M))
         phase = None

@@ -2,7 +2,7 @@
 import pathlib
 import tempfile
 
-from core import Conflict, SKILLS, dependency_policy, digest, git, manifest, repository, safe, shared
+from core import Conflict, SKILLS, REQUIRED_ASSETS, dependency_policy, digest, git, manifest, repository, safe, shared
 from setup import preflight_destinations, source_bundle, transaction
 
 
@@ -40,6 +40,8 @@ def bootstrap(args):
     m = manifest(root)
     if not m:
         raise Conflict('Dependency pin missing; perform one-time adoption first')
+    if not REQUIRED_ASSETS <= m['files'].keys():
+        raise Conflict('Incomplete installed manifest; restore reviewed complete adoption')
     dependency_policy(root, m)
     expected = {name: h for name, h in m['files'].items() if shared(name)}
     required = {'.agents/skills/' + s + '/SKILL.md' for s in SKILLS}

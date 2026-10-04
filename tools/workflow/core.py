@@ -16,6 +16,7 @@ CI_ASSETS = ('.github/workflows/workflow-v2-verify.yml',
              '.github/workflows/workflow-v2-pr-metadata.yml')
 RUNTIME_ASSETS = tuple('tools/workflow/' + p for p in
                       ('workflow.py', 'core.py', 'setup.py', 'bootstrap.py', 'checks.py', 'records.py', 'migration.py'))
+REQUIRED_ASSETS = frozenset('.agents/skills/' + s + '/SKILL.md' for s in SKILLS) | frozenset(CI_ASSETS) | frozenset(RUNTIME_ASSETS)
 PHASES = {'wf:backlog', 'wf:ready', 'wf:in-progress', 'wf:review'}
 MODIFIERS = {'wf:blocked', 'wf:deferred'}
 

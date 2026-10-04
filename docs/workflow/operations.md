@@ -74,3 +74,6 @@ managed block. Narrow the offending rule deliberately; unrelated rules are prese
 
 Missing installed runtime modules fail bundle preflight. Extra ignored shared assets
 also mark dependency identity dirty, even when ordinary Git status is clean.
+
+Dropping an installed runtime/CI/skill file and its manifest entry still fails complete
+adoption checks. Partial uninstall residual provenance is recovery evidence, not a pass.

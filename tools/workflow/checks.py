@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from urllib.parse import unquote, urlsplit
 
-from core import (Conflict, Invalid, SKILLS, CI_ASSETS, RUNTIME_ASSETS, START, block, config, dependency_policy, digest, finding, git, load,
+from core import (Conflict, Invalid, SKILLS, CI_ASSETS, REQUIRED_ASSETS, START, block, config, dependency_policy, digest, finding, git, load,
                   manifest, owned, relative, safe)
 from records import issue_findings
 
@@ -115,6 +115,8 @@ def check(root, args):
             findings.append(finding('config.path', c[key], 'Configured document is missing', 'Restore or correct configured path'))
     m = manifest(root)
     if m:
+        if not REQUIRED_ASSETS <= m['files'].keys():
+            findings.append(finding('bundle.incomplete', '.workflow/install-manifest.json', 'Installed manifest omits required assets', 'Restore reviewed complete adoption; do not hide missing files in provenance'))
         if m['schema_version'] == 2:
             try:
                 dependency_policy(root, m)
@@ -139,8 +141,7 @@ def check(root, args):
             destinations.add(dest)
             if not safe(root, source).is_file():
                 findings.append(finding('bundle.missing', source, 'Production asset missing', 'Assemble complete bundle before installation'))
-        required = {'.agents/skills/' + s + '/SKILL.md' for s in SKILLS} | set(CI_ASSETS) | set(RUNTIME_ASSETS)
-        if not required <= destinations:
+        if not REQUIRED_ASSETS <= destinations:
             findings.append(finding('bundle.incomplete', '.workflow/bundle.json', 'Required skill, consumer workflow or installed runtime omitted', 'Include all canonical skills, both workflows and every runtime module'))
     for s in SKILLS:
         p = safe(root, '.agents/skills/' + s + '/SKILL.md')
