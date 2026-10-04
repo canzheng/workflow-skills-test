@@ -17,12 +17,12 @@ def unique_object(pairs):
 
 def validate(catalog):
     if not isinstance(catalog, dict):
-        raise ValueError('Catalog must be a JSON object')
+        raise ValueError('Catalog must be a flat JSON object mapping IDs to nonnegative integer grams')
     for identifier, grams in catalog.items():
         if not isinstance(identifier, str) or not identifier.strip():
             raise ValueError('Ingredient ID must be nonempty text')
         if type(grams) is not int or grams < 0:
-            raise ValueError('Ingredient grams must be a nonnegative integer')
+            raise ValueError('Ingredient grams must be a nonnegative integer in a flat catalog')
     return catalog
 
 

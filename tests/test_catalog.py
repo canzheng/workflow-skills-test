@@ -49,18 +49,19 @@ class CatalogTests(unittest.TestCase):
                     self.assertEqual(self.path.read_text(), text)
 
     def test_deeply_nested_invalid_json_has_actionable_error_without_traceback(self):
-        original = '[' * 10000 + '0' + ']' * 10000
-        self.path.write_text(original)
-        for args in [('show',), ('add', 'salt', '5')]:
-            with self.subTest(args=args):
-                result = self.cli(*args)
-                self.assertEqual(result.returncode, 1)
-                self.assertEqual(result.stdout, '')
-                self.assertTrue(result.stderr.startswith('Error: '))
-                self.assertIn('flat', result.stderr)
-                self.assertNotIn('Traceback', result.stderr)
-                self.assertEqual(self.path.read_text(), original)
-                self.assertEqual(list(self.path.parent.glob('.pantry-*')), [])
+        nested_array = '[' * 10000 + '0' + ']' * 10000
+        for shape, original in [('deep array', nested_array), ('deep value', '{"oats":' + nested_array + '}'), ('decoded array', '[0]'), ('decoded value', '{"oats":[0]}')]:
+            self.path.write_text(original)
+            for args in [('show',), ('add', 'salt', '5')]:
+                with self.subTest(shape=shape, args=args):
+                    result = self.cli(*args)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertEqual(result.stdout, '')
+                    self.assertTrue(result.stderr.startswith('Error: '))
+                    self.assertIn('flat', result.stderr)
+                    self.assertNotIn('Traceback', result.stderr)
+                    self.assertEqual(self.path.read_text(), original)
+                    self.assertEqual(list(self.path.parent.glob('.pantry-*')), [])
 
     def test_missing_parent_and_symlink_fail_without_selecting_other_target(self):
         self.path = self.path.parent / 'missing' / 'catalog.json'
