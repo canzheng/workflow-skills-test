@@ -84,3 +84,6 @@ adoption checks. Partial uninstall residual provenance is recovery evidence, not
 Required docs, Issue/PR templates and risk references also participate in completeness.
 Before a first Git commit, doctor reports revision:null/dirty:true with actual content
 digest; commit reviewed adoption files and rerun to establish exact-commit evidence.
+
+Environment setup validates the explicit owner/repository against any existing
+project config before adoption or bootstrap, rejecting mismatches without writes.

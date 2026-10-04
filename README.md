@@ -10,7 +10,7 @@ Initial setup/CI proves workflow integrity; application verification is added wi
 the ingredient-catalog implementation PR. No global skill install or Conda needed.
 
 Cloud and local environment setup use the source-owned fetch-and-run entrypoint in
-[workflow-skills README](https://github.com/canzheng/workflow-skills/blob/608b4e6ee16017bca3e63e98b2e1e91235b1a004/README.md).
+[workflow-skills README](https://github.com/canzheng/workflow-skills/blob/2e5106a007bb4da37b25a81e2bce1828a37d51eb/README.md).
 Fetch that exact revision and run its `tools/workflow/environment-setup.sh` against
 this consumer Git root and `canzheng/workflow-skills-test`. No setup script is copied
 into this repository. Existing adoption retains its tracked manifest pin; setup
