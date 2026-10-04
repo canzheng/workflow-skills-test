@@ -1,0 +1,25 @@
+name: Feature
+description: A bounded, independently verifiable outcome
+title: "Feature: "
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome and scope
+      description: Problem, in scope, out of scope, and authorization extent.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable success and meaningful failure cases.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Design, dependencies and proof
+      description: Link relevant design sections/specs, direct required Issue URLs and reasons, risks, environment and documentation impact. For generated batches include the workflow-requires JSON-array marker (empty for independent work); omit irrelevant concerns.
+    validations:
+      required: true

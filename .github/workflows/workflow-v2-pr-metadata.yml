@@ -1,0 +1,21 @@
+name: PR metadata
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  metadata:
+    name: v2 PR contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Trusted base code reads the event and head Git blobs as data only.
+      - run: python3 tools/workflow/workflow.py check --repo . --pr-json "$GITHUB_EVENT_PATH" --metadata-only --json

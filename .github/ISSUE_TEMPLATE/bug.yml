@@ -1,0 +1,24 @@
+name: Bug
+description: Restore a clear behavior contract
+title: "Bug: "
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and expected versus actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and acceptance
+      description: Bound the repair, retain discriminating regression cases, include failure paths.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and documentation impact
+      description: Design/spec links, dependencies, risk and required environment where relevant. A small clear bug needs no new OpenSpec change.
+    validations:
+      required: true

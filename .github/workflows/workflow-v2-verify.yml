@@ -1,0 +1,26 @@
+name: Workflow verification
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: v2 verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Python runs the standard-library workflow checker, not project-specific tests.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Reviewed repository config supplies actual argv commands. Missing application
+      # runtimes/dependencies fail; provide their preparation in those commands.
+      - run: python3 tools/workflow/workflow.py check --repo . --run-local --json > verification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-checks
+          path: verification.json
+          retention-days: 14

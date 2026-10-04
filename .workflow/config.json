@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "workflow": "github-v2",
+  "repository": "canzheng/workflow-skills-test",
+  "docs_index": "docs/workflow/README.md",
+  "contract": "docs/workflow/contract.md",
+  "openspec": "on-demand",
+  "verification": {
+    "local": [
+      [
+        "python3",
+        "tools/workflow/workflow.py",
+        "check",
+        "--repo",
+        "."
+      ]
+    ],
+    "integration": []
+  }
+}
