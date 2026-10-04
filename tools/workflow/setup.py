@@ -15,7 +15,9 @@ def source_bundle(source, revision):
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
         raise Invalid('source revision must be a full 40-character commit SHA')
     source = repository(source)
-    git(source, 'cat-file', '-e', revision + '^{commit}')
+    resolved = git(source, 'rev-parse', '--verify', revision + '^{commit}').decode().strip()
+    if resolved != revision:
+        raise Invalid('source revision must identify the commit itself, not an annotated tag object')
     spec = load(safe(source, '.workflow/bundle.json'))
     if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not valid_bundle_version(spec.get('bundle_version')) or not isinstance(spec.get('assets'), dict):
         raise Invalid('Unsupported source bundle schema')
