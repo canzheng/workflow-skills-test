@@ -90,6 +90,7 @@ from app import catalog
 path = pathlib.Path(sys.argv[1])
 if os.geteuid() == 0:
     os.chown(path.parent, 65534, 65534)
+    os.chown(path, 65534, 65534)
     os.setuid(65534)
 replace = os.replace
 def revoke_permission(source, target):
