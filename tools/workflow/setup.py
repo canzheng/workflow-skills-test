@@ -6,8 +6,9 @@ import re
 import shutil
 import tempfile
 
-from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, block, config, digest,
-                  git, load, manifest, owned, repository, safe)
+from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
+                  SOURCE_URL, block, config, digest, git, ignore_block, load, manifest,
+                  owned, repository, safe, shared, shared_files, source_url)
 
 
 def source_bundle(source, revision):
@@ -19,9 +20,9 @@ def source_bundle(source, revision):
     if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not isinstance(spec.get('bundle_version'), str) or not isinstance(spec.get('assets'), dict) or not re.fullmatch(r'2\.\d+\.\d+', spec['bundle_version']):
         raise Invalid('Unsupported source bundle schema')
     assets = spec['assets']
-    required = ['.agents/skills/' + s + '/SKILL.md' for s in SKILLS] + list(CI_ASSETS)
+    required = ['.agents/skills/' + s + '/SKILL.md' for s in SKILLS] + list(CI_ASSETS) + ['tools/workflow/bootstrap.py']
     if any(p not in assets.values() for p in required):
-        raise Conflict('Incomplete production bundle: all three skills and both consumer workflows are required')
+        raise Conflict('Incomplete production bundle: skills, consumer workflows and dependency bootstrap are required')
     paths = {'.workflow/bundle.json', *assets.keys()}
     result = {}
     for name in sorted(paths):
@@ -135,6 +136,9 @@ def setup(args):
     agents = safe(root, 'AGENTS.md')
     text = agents.read_text() if agents.exists() else ''
     current = block(text)
+    ignore_path = safe(root, '.gitignore')
+    ignore_text = ignore_path.read_text(encoding='utf-8') if ignore_path.exists() else ''
+    current_ignore = ignore_block(ignore_text)
     if not args.uninstall and ('<!-- Beginning of Workflow Section -->' in text or
                                'bash install.sh' in text or 'must invoke `start-task`' in text):
         raise Conflict('Active legacy instruction routing; inspect migration and perform a bounded cutover first')
@@ -156,6 +160,11 @@ def setup(args):
             changes['AGENTS.md'] = text.replace(current, '', 1).encode()
         elif current:
             residuals.append('AGENTS.md managed block')
+        if old['schema_version'] == 2 and current_ignore:
+            if digest(current_ignore.encode()) != old['gitignore_block_hash']:
+                residuals.append('.gitignore managed block')
+            elif not any(shared(name) for name in remaining):
+                changes['.gitignore'] = ignore_text.replace(current_ignore, '', 1).encode()
         mpath = '.workflow/install-manifest.json'
         if residuals:
             updated = {**old, 'files': remaining}
@@ -166,6 +175,17 @@ def setup(args):
         if not args.source or not args.revision:
             raise Invalid('setup requires --source and --revision')
         version, assets = source_bundle(args.source, args.revision)
+        url = source_url(getattr(args, 'source_url', SOURCE_URL))
+        if git(root, 'ls-files', '-z', '--', *['.agents/skills/' + s for s in SKILLS]):
+            raise Conflict('Shared workflow skills are tracked; review and untrack only the three canonical skill directories before dependency adoption')
+        for name in shared_files(root):
+            safe(root, name)
+            if name not in assets and (not old or name not in old['files']):
+                raise Conflict('Unmanaged shared dependency asset: ' + name)
+        if current_ignore and (not old or old['schema_version'] != 2):
+            raise Conflict('Unmanaged shared-dependency gitignore block; resolve ownership first')
+        if old and old['schema_version'] == 2 and (not current_ignore or digest(current_ignore.encode()) != old['gitignore_block_hash']):
+            raise Conflict('Managed shared-dependency ignore block modified or missing')
         # Existing configuration is user owned and must remain valid.
         cp = safe(root, '.workflow/config.json')
         if cp.exists():
@@ -175,6 +195,8 @@ def setup(args):
                 raise Conflict('Managed AGENTS block modified or missing')
             for name, h in old['files'].items():
                 p = safe(root, name)
+                if shared(name) and old['schema_version'] == 2 and not p.exists():
+                    continue  # Fresh clones have not materialized ignored dependencies yet.
                 if not p.is_file() or digest(p.read_bytes()) != h:
                     raise Conflict('Modified/missing managed file: ' + name)
                 if name not in assets:
@@ -185,13 +207,19 @@ def setup(args):
                 raise Conflict('Unmanaged target collision: ' + name)
             if not p.exists() or p.read_bytes() != data:
                 changes[name] = data
-        entry = (START + '\nUse workflow-skills v2 from .agents/skills/. Read\n'
+        entry = (START + '\nBootstrap the pinned shared skills before starting the agent:\n'
+                 'python3 tools/workflow/workflow.py bootstrap --repo . --apply --json\n'
+                 'Use workflow-skills v2 from .agents/skills/. Read\n'
                  'docs/workflow/contract.md and docs/workflow/README.md.\n'
                  'Historical planning directories do not select v1. Never use obsolete\n'
                  'repository wrappers or global installation here. Preserve unrelated rules.\n' + END)
         new_text = text.replace(current, entry, 1) if current else text + ('\n' if text and not text.endswith('\n') else '') + entry + '\n'
         if new_text != text:
             changes['AGENTS.md'] = new_text.encode()
+        ignores = IGNORE_START + '\n' + '\n'.join('/.agents/skills/' + s + '/' for s in SKILLS) + '\n' + IGNORE_END
+        new_ignore = ignore_text.replace(current_ignore, ignores, 1) if current_ignore else ignore_text + ('\n' if ignore_text and not ignore_text.endswith('\n') else '') + ignores + '\n'
+        if new_ignore != ignore_text:
+            changes['.gitignore'] = new_ignore.encode()
         if not cp.exists():
             if not args.repository or not re.fullmatch(r'[\w.-]+/[\w.-]+', args.repository):
                 raise Invalid('Fresh setup requires --repository owner/name')
@@ -199,8 +227,9 @@ def setup(args):
                      docs_index='docs/workflow/README.md', contract='docs/workflow/contract.md',
                      openspec='on-demand', verification={'local': [['python3', 'tools/workflow/workflow.py', 'check', '--repo', '.']], 'integration': []})
             changes['.workflow/config.json'] = (json.dumps(c, indent=2) + '\n').encode()
-        m = dict(schema_version=1, bundle_version=version, source_revision=args.revision,
-                 files={name: digest(data) for name, data in assets.items()}, agents_block_hash=digest(entry.encode()))
+        m = dict(schema_version=2, bundle_version=version, source_revision=args.revision, source_url=url,
+                 files={name: digest(data) for name, data in assets.items()}, agents_block_hash=digest(entry.encode()),
+                 gitignore_block_hash=digest(ignores.encode()))
         data = (json.dumps(m, indent=2) + '\n').encode()
         p = safe(root, '.workflow/install-manifest.json')
         if not p.exists() or p.read_bytes() != data:

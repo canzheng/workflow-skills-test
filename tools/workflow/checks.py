@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from urllib.parse import unquote, urlsplit
 
-from core import (Invalid, SKILLS, CI_ASSETS, START, block, config, digest, finding, git, load,
+from core import (Conflict, Invalid, SKILLS, CI_ASSETS, START, block, config, dependency_policy, digest, finding, git, load,
                   manifest, owned, relative, safe)
 from records import issue_findings
 
@@ -115,6 +115,11 @@ def check(root, args):
             findings.append(finding('config.path', c[key], 'Configured document is missing', 'Restore or correct configured path'))
     m = manifest(root)
     if m:
+        if m['schema_version'] == 2:
+            try:
+                dependency_policy(root, m)
+            except Conflict as exc:
+                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Restore reviewed dependency policy; bootstrap before verification'))
         for name, h in m['files'].items():
             p = safe(root, name)
             if not p.is_file() or digest(p.read_bytes()) != h:
@@ -134,7 +139,7 @@ def check(root, args):
             destinations.add(dest)
             if not safe(root, source).is_file():
                 findings.append(finding('bundle.missing', source, 'Production asset missing', 'Assemble complete bundle before installation'))
-        required = {'.agents/skills/' + s + '/SKILL.md' for s in SKILLS} | set(CI_ASSETS)
+        required = {'.agents/skills/' + s + '/SKILL.md' for s in SKILLS} | set(CI_ASSETS) | {'tools/workflow/bootstrap.py'}
         if not required <= destinations:
             findings.append(finding('bundle.incomplete', '.workflow/bundle.json', 'Required skill or consumer workflow omitted', 'Include all three canonical skills and both consumer workflows'))
     for s in SKILLS:

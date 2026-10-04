@@ -15,6 +15,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Materialize pinned shared skills
+        run: python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
       # Reviewed repository config supplies actual argv commands. Missing application
       # runtimes/dependencies fail; provide their preparation in those commands.
       - run: python3 tools/workflow/workflow.py check --repo . --run-local --json > verification.json

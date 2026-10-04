@@ -25,3 +25,22 @@ contexts and require v2 verification/v2 PR contract where appropriate, then read
 settings and observe blocking. Merge protection and skill discovery remain separate
 acceptance. Existing workflow name collisions are conflicts; modified owned workflows
 are preserved on update/uninstall. No closure/phase bot is installed.
+
+## Cloud and Ubuntu preparation
+
+From the checked-out consumer root, run before the agent starts/discovers skills:
+
+```sh
+python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
+python3 tools/workflow/workflow.py check --repo . --run-local --json
+python3 tools/workflow/workflow.py doctor --repo . --json
+```
+
+Use the tracked manifest's exact source pin on both hosts. Repeated bootstrap is a
+no-op when bytes match, preserves project-owned tracked files, and never fetches
+main/latest or installs globally. Preparation/maintenance hook ordering and fresh
+host discovery require real host evidence; a start-of-task instruction alone does
+not establish pre-discovery installation. See [operations](operations.md) for scoped
+ignores, offline bootstrap, old tracked-file migration and safe conflict recovery.
+The generic CI job bootstraps the same pin before verification. Trusted-base metadata
+continues to read PR data without executing head code or requiring head skill files.

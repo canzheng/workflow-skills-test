@@ -7,6 +7,9 @@ import subprocess
 
 START = '<!-- workflow-v2:start -->'
 END = '<!-- workflow-v2:end -->'
+IGNORE_START = '# workflow-v2-dependency:start'
+IGNORE_END = '# workflow-v2-dependency:end'
+SOURCE_URL = 'https://github.com/canzheng/workflow-skills.git'
 SKILLS = ('workflow-design-to-backlog', 'workflow-deliver-issue', 'workflow-risk-review')
 CI_ASSETS = ('.github/workflows/workflow-v2-verify.yml',
              '.github/workflows/workflow-v2-pr-metadata.yml')
@@ -112,6 +115,59 @@ def block(text):
     return text[text.index(START):text.index(END) + len(END)]
 
 
+def shared(name):
+    return any(name.startswith('.agents/skills/' + s + '/') for s in SKILLS)
+
+
+def ignore_block(text):
+    a, b = text.count(IGNORE_START), text.count(IGNORE_END)
+    if (a, b) == (0, 0):
+        return None
+    if (a, b) != (1, 1) or text.index(IGNORE_START) >= text.index(IGNORE_END):
+        raise Conflict('Malformed shared-dependency gitignore markers')
+    return text[text.index(IGNORE_START):text.index(IGNORE_END) + len(IGNORE_END)]
+
+
+def source_url(value):
+    if not isinstance(value, str) or not re.fullmatch(r'https://github\.com/[\w.-]+/[\w.-]+', value):
+        raise Invalid('Dependency source URL must be an explicit HTTPS GitHub repository without credentials')
+    return value
+
+
+def shared_files(root):
+    result = set()
+    for skill in SKILLS:
+        folder = safe(root, '.agents/skills/' + skill)
+        if folder.exists() and not folder.is_dir():
+            raise Conflict('Shared skill directory is not a directory: ' + str(folder))
+        for p in folder.rglob('*') if folder.exists() else ():
+            if p.is_file() or p.is_symlink():
+                result.add(p.relative_to(root).as_posix())
+    return result
+
+
+def dependency_policy(root, m):
+    """Require ignored, untracked canonical namespaces; never edit the Git index."""
+    if m['schema_version'] != 2:
+        raise Conflict('This pin predates dependency bootstrap; perform explicit adoption/update first')
+    p = safe(root, '.gitignore')
+    b = ignore_block(p.read_text(encoding='utf-8') if p.exists() else '')
+    if not b or digest(b.encode()) != m['gitignore_block_hash']:
+        raise Conflict('Shared-dependency ignore block modified/missing; restore reviewed project policy')
+    prefixes = ['.agents/skills/' + s for s in SKILLS]
+    if git(root, 'ls-files', '-z', '--', *prefixes):
+        raise Conflict('Shared workflow skills are tracked; review and untrack only the three canonical skill directories before adoption/bootstrap')
+    for name in shared_files(root):
+        safe(root, name)
+        if name not in m['files']:
+            raise Conflict('Unmanaged shared dependency asset: ' + name)
+    for name in m['files']:
+        if shared(name):
+            result = subprocess.run(['git', '-C', str(root), 'check-ignore', '--no-index', name], capture_output=True, check=False)
+            if result.returncode:
+                raise Conflict('Shared dependency path is not ignored: ' + name)
+
+
 def owned(name):
     relative(name)
     return (name.startswith('tools/workflow/') or
@@ -129,8 +185,12 @@ def manifest(root):
     if not p.exists():
         return None
     m = load(p)
-    if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') != 1 or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not isinstance(m.get('bundle_version'), str):
+    if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') not in (1, 2) or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not isinstance(m.get('bundle_version'), str):
         raise Invalid('Invalid installation manifest')
+    if m['schema_version'] == 2:
+        source_url(m.get('source_url'))
+        if not re.fullmatch(r'[0-9a-f]{64}', str(m.get('gitignore_block_hash', ''))):
+            raise Invalid('Invalid shared-dependency ignore hash')
     for name, h in m['files'].items():
         if not owned(name) or not isinstance(h, str) or not re.fullmatch(r'[0-9a-f]{64}', h):
             raise Invalid('Unsafe manifest path/hash: ' + name)
@@ -143,6 +203,15 @@ def manifest(root):
 def content_identity(root):
     """Bind diagnostics/evidence to actual tracked and nonignored untracked bytes."""
     names = set(git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').decode().split('\0')) - {''}
+    m = manifest(root)
+    dependency_modified = False
+    if m and m['schema_version'] == 2:
+        names.update(shared_files(root))
+        for name, expected in m['files'].items():
+            if shared(name):
+                names.add(name)
+                p = safe(root, name)
+                dependency_modified |= not p.is_file() or digest(p.read_bytes()) != expected
     h = hashlib.sha256()
     for name in sorted(names):
         relative(name)
@@ -159,4 +228,5 @@ def content_identity(root):
         h.update(name.encode() + b'\0' + digest(data).encode() + b'\0')
     return dict(revision=git(root, 'rev-parse', 'HEAD').decode().strip(),
                 branch=git(root, 'branch', '--show-current').decode().strip(),
-                dirty=bool(git(root, 'status', '--porcelain')), content_digest=h.hexdigest())
+                dirty=bool(git(root, 'status', '--porcelain')) or dependency_modified,
+                dependency_modified=dependency_modified, content_digest=h.hexdigest())

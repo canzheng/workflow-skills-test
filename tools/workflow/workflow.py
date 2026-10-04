@@ -6,8 +6,11 @@ import shutil
 import subprocess
 import sys
 
+# Bootstrap should not create untracked utility cache files in a fresh consumer.
+sys.dont_write_bytecode = True
+
 from core import (Conflict, Invalid, SKILLS, START, block, config, content_identity, digest, finding,
-                  manifest, repository, safe)
+                  SOURCE_URL, dependency_policy, manifest, repository, safe)
 from setup import setup
 
 
@@ -26,6 +29,11 @@ def doctor(root, skill_roots=()):
         if marker in text:
             findings.append(finding('instructions.legacy', 'AGENTS.md', 'Active legacy routing: ' + marker, 'Cut over only the conflicting workflow rule'))
     if m:
+        if m['schema_version'] == 2:
+            try:
+                dependency_policy(root, m)
+            except Conflict as exc:
+                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Restore reviewed scoped ignores/untrack only shared namespaces'))
         for name, h in m['files'].items():
             p = safe(root, name)
             if not p.is_file() or digest(p.read_bytes()) != h:
@@ -83,10 +91,16 @@ def main(argv=None):
     s.add_argument('--target', required=True)
     s.add_argument('--source')
     s.add_argument('--revision')
+    s.add_argument('--source-url', default=SOURCE_URL)
     s.add_argument('--repository')
     s.add_argument('--apply', action='store_true')
     s.add_argument('--uninstall', action='store_true')
     s.add_argument('--json', action='store_true')
+    b = sub.add_parser('bootstrap')
+    b.add_argument('--repo', required=True)
+    b.add_argument('--source', help='Optional explicit pinned source checkout for offline bootstrap')
+    b.add_argument('--apply', action='store_true')
+    b.add_argument('--json', action='store_true')
     d = sub.add_parser('doctor')
     d.add_argument('--repo', required=True)
     d.add_argument('--skill-root', action='append', default=[])
@@ -116,6 +130,9 @@ def main(argv=None):
             extra = dict(applied=args.apply, changes=changes, residuals=residuals)
             findings = [finding('uninstall.residual', x, 'Modified asset preserved', 'Review and remove manually if desired', 'warning') for x in residuals]
             code = 1 if residuals else 0
+        elif args.command == 'bootstrap':
+            from bootstrap import bootstrap
+            extra = dict(applied=args.apply, changes=bootstrap(args))
         elif args.command == 'doctor':
             root = repository(args.repo)
             findings, extra = doctor(root, args.skill_root)
