@@ -49,7 +49,10 @@ python3 tools/workflow/workflow.py check --repo . --run-local --json
 python3 tools/workflow/workflow.py doctor --repo . --json
 ```
 
-Bootstrap reads the tracked pin; no source version belongs in environment settings.
+Bootstrap reads the tracked dependency pin. A source-owned environment entrypoint
+may itself be fetched at an explicit full SHA; that seed never overrides an existing
+consumer pin. See the workflow-skills README for the Cloud install-script/local
+fetch-and-run command; no setup script needs to be tracked in the target repository.
 If files already match it, rerunning needs no network and returns `changes: []`.
 Otherwise Python >=3.10, Git and Git HTTPS read access to the pinned source are
 required. It fetches the full commit into a temporary checkout, verifies source and
@@ -77,3 +80,7 @@ also mark dependency identity dirty, even when ordinary Git status is clean.
 
 Dropping an installed runtime/CI/skill file and its manifest entry still fails complete
 adoption checks. Partial uninstall residual provenance is recovery evidence, not a pass.
+
+Required docs, Issue/PR templates and risk references also participate in completeness.
+Before a first Git commit, doctor reports revision:null/dirty:true with actual content
+digest; commit reviewed adoption files and rerun to establish exact-commit evidence.

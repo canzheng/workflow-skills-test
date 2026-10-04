@@ -21,7 +21,7 @@ def source_bundle(source, revision):
         raise Invalid('Unsupported source bundle schema')
     assets = spec['assets']
     if not REQUIRED_ASSETS <= set(assets.values()):
-        raise Conflict('Incomplete production bundle: skills, consumer workflows and all installed runtime modules are required')
+        raise Conflict('Incomplete production bundle: required consumer assets omitted: ' + ', '.join(sorted(REQUIRED_ASSETS - set(assets.values()))))
     paths = {'.workflow/bundle.json', *assets.keys()}
     result = {}
     for name in sorted(paths):

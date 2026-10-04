@@ -142,7 +142,7 @@ def check(root, args):
             if not safe(root, source).is_file():
                 findings.append(finding('bundle.missing', source, 'Production asset missing', 'Assemble complete bundle before installation'))
         if not REQUIRED_ASSETS <= destinations:
-            findings.append(finding('bundle.incomplete', '.workflow/bundle.json', 'Required skill, consumer workflow or installed runtime omitted', 'Include all canonical skills, both workflows and every runtime module'))
+            findings.append(finding('bundle.incomplete', '.workflow/bundle.json', 'Required consumer assets omitted: ' + ', '.join(sorted(REQUIRED_ASSETS - destinations)), 'Include every mandatory consumer asset'))
     for s in SKILLS:
         p = safe(root, '.agents/skills/' + s + '/SKILL.md')
         if not p.is_file():

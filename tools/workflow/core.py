@@ -16,7 +16,13 @@ CI_ASSETS = ('.github/workflows/workflow-v2-verify.yml',
              '.github/workflows/workflow-v2-pr-metadata.yml')
 RUNTIME_ASSETS = tuple('tools/workflow/' + p for p in
                       ('workflow.py', 'core.py', 'setup.py', 'bootstrap.py', 'checks.py', 'records.py', 'migration.py'))
-REQUIRED_ASSETS = frozenset('.agents/skills/' + s + '/SKILL.md' for s in SKILLS) | frozenset(CI_ASSETS) | frozenset(RUNTIME_ASSETS)
+REQUIRED_ASSETS = (frozenset('.agents/skills/' + s + '/SKILL.md' for s in SKILLS) |
+                   frozenset(CI_ASSETS) | frozenset(RUNTIME_ASSETS) | frozenset((
+                       'docs/workflow/contract.md', 'docs/workflow/README.md',
+                       'docs/workflow/development.md', 'docs/workflow/operations.md',
+                       '.github/ISSUE_TEMPLATE/feature.yml', '.github/ISSUE_TEMPLATE/bug.yml',
+                       '.github/pull_request_template.md',
+                       '.agents/skills/workflow-risk-review/references/methods.md')))
 PHASES = {'wf:backlog', 'wf:ready', 'wf:in-progress', 'wf:review'}
 MODIFIERS = {'wf:blocked', 'wf:deferred'}
 
@@ -284,7 +290,16 @@ def content_identity(root):
         else:
             data = b'non-file'
         h.update(name.encode() + b'\0' + digest(data).encode() + b'\0')
-    return dict(revision=git(root, 'rev-parse', 'HEAD').decode().strip(),
+    resolved = subprocess.run(['git', '-C', str(root), 'rev-parse', '--verify', '--quiet', 'HEAD^{commit}'], capture_output=True, check=False)
+    if resolved.returncode == 0:
+        revision = resolved.stdout.decode().strip()
+    else:
+        ref = git(root, 'symbolic-ref', '--quiet', 'HEAD').decode().strip()
+        exists = subprocess.run(['git', '-C', str(root), 'show-ref', '--verify', '--quiet', ref], capture_output=True, check=False)
+        if not ref.startswith('refs/heads/') or exists.returncode != 1:
+            raise Invalid('Cannot resolve repository commit; inspect Git integrity')
+        revision = None  # An unborn branch has content, but no tested commit to invent.
+    return dict(revision=revision,
                 branch=git(root, 'branch', '--show-current').decode().strip(),
-                dirty=bool(git(root, 'status', '--porcelain')) or dependency_modified,
+                dirty=revision is None or bool(git(root, 'status', '--porcelain')) or dependency_modified,
                 dependency_modified=dependency_modified, content_digest=h.hexdigest())
