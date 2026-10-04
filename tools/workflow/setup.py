@@ -20,9 +20,10 @@ def source_bundle(source, revision):
     if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not isinstance(spec.get('bundle_version'), str) or not isinstance(spec.get('assets'), dict) or not re.fullmatch(r'2\.\d+\.\d+', spec['bundle_version']):
         raise Invalid('Unsupported source bundle schema')
     assets = spec['assets']
-    required = ['.agents/skills/' + s + '/SKILL.md' for s in SKILLS] + list(CI_ASSETS) + ['tools/workflow/bootstrap.py']
+    runtime = ('workflow.py', 'core.py', 'setup.py', 'bootstrap.py', 'checks.py', 'records.py', 'migration.py')
+    required = ['.agents/skills/' + s + '/SKILL.md' for s in SKILLS] + list(CI_ASSETS) + ['tools/workflow/' + p for p in runtime]
     if any(p not in assets.values() for p in required):
-        raise Conflict('Incomplete production bundle: skills, consumer workflows and dependency bootstrap are required')
+        raise Conflict('Incomplete production bundle: skills, consumer workflows and all installed runtime modules are required')
     paths = {'.workflow/bundle.json', *assets.keys()}
     result = {}
     for name in sorted(paths):

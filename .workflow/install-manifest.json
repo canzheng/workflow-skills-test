@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "bundle_version": "2.0.0",
-  "source_revision": "133dcff76ddf252f27cd685dd6e23a4d58ce8012",
+  "source_revision": "cb2cde7a7f0b739d350e15ac2b01a45553563251",
   "source_url": "https://github.com/canzheng/workflow-skills.git",
   "files": {
     ".agents/skills/workflow-deliver-issue/SKILL.md": "545fe01975da2f3169715631ad6c8fa1018057f716b840d3e2f9993515057ae6",
@@ -15,14 +15,14 @@
     "docs/workflow/contract.md": "8432bc7f145d8cf823e222f7762f0d94fa55b5e1b6c4719d9785faee54e32ae2",
     "docs/workflow/README.md": "d9df890925187b0065f4f5cdde5ae11af4411b7c77d1ac67285fbedb400f6f69",
     "docs/workflow/development.md": "4af3c4c94ffd92f62ae4fabe0c88d74e4c58b66b2682ca0e288d3f90dcf27c46",
-    "docs/workflow/operations.md": "27ad2b3f1af4493eb4fa9c9550e40e2c4cdadd4dc3d4b88697bc4c5709129488",
+    "docs/workflow/operations.md": "319e50f727f350bb335070adcdcda80f6ef187a85c7c91b040eff528dad498cc",
     ".github/workflows/workflow-v2-verify.yml": "9a80943b087698e49d8e2b24e3dedd7c31370e00164efc17340a574b582417b2",
     "tools/workflow/bootstrap.py": "6390ec29faf083ed0a4176312ed8ea6710dbc5c65409787fc6c1ae3d3b033e72",
     "tools/workflow/checks.py": "5d0633689b65942afc7235a497a6e858351e133fead3900acd6c6978c4408b4e",
-    "tools/workflow/core.py": "d9ef2198d0662c20de0b63b61f4edb32cccf3750ab8c13d40a3c6a69025d2a4f",
+    "tools/workflow/core.py": "2673f71df840dd9a84e72a866317f4d92187fcb70efd44f3a23c0e0195e630a1",
     "tools/workflow/migration.py": "23a554a73e948e31be81a00b7b462b6e81ab09590b675a07c3f58c952cd0b7f1",
     "tools/workflow/records.py": "02771f8b7bd49a61acc831e8b4071561fe4a8ab7e4fcf0651b1463f05fe220ad",
-    "tools/workflow/setup.py": "b43a10aa39c1f10618c4554a620d585ffd29583719f5600e81848070a36c1ecd",
+    "tools/workflow/setup.py": "50c33fdfe4c0ebd320b43f3ec2b455db18a6029ad930c8f4ec23c1a6884393e6",
     "tools/workflow/workflow.py": "af5244180460b7b322288afd929e8049e8d82af1d196e172ca7cc9fc9a000b14"
   },
   "agents_block_hash": "c006e7792014c808cdc3d9e78a0fed87766b1d2517282f590bee6209fd3f6ede",

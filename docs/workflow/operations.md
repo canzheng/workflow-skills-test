@@ -71,3 +71,6 @@ Effective Git ignore policy is checked before adoption/update writes and during
 bootstrap/check/doctor, including nested/global/info excludes. Broad project-skill
 ignores or negations exposing shared dependencies conflict even with an unchanged
 managed block. Narrow the offending rule deliberately; unrelated rules are preserved.
+
+Missing installed runtime modules fail bundle preflight. Extra ignored shared assets
+also mark dependency identity dirty, even when ordinary Git status is clean.

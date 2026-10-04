@@ -259,7 +259,9 @@ def content_identity(root):
     m = manifest(root)
     dependency_modified = False
     if m and m['schema_version'] == 2:
-        names.update(shared_files(root))
+        actual_shared = shared_files(root)
+        names.update(actual_shared)
+        dependency_modified = bool(actual_shared - m['files'].keys())
         for name, expected in m['files'].items():
             if shared(name):
                 names.add(name)
