@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "bundle_version": "2.0.0",
-  "source_revision": "2e5106a007bb4da37b25a81e2bce1828a37d51eb",
+  "source_revision": "10ff9cc807a54aa0834d24de82e0b685048379de",
   "source_url": "https://github.com/canzheng/workflow-skills.git",
   "files": {
     ".agents/skills/workflow-deliver-issue/SKILL.md": "545fe01975da2f3169715631ad6c8fa1018057f716b840d3e2f9993515057ae6",
@@ -15,14 +15,14 @@
     "docs/workflow/contract.md": "8432bc7f145d8cf823e222f7762f0d94fa55b5e1b6c4719d9785faee54e32ae2",
     "docs/workflow/README.md": "d9df890925187b0065f4f5cdde5ae11af4411b7c77d1ac67285fbedb400f6f69",
     "docs/workflow/development.md": "4af3c4c94ffd92f62ae4fabe0c88d74e4c58b66b2682ca0e288d3f90dcf27c46",
-    "docs/workflow/operations.md": "ccb291838b5f74d9a34c999e75fe13dc60920bf0260940b98a36f46575368dee",
+    "docs/workflow/operations.md": "0ca00c4c2ee9c52fb6e3ad7f6a05894e50b46f77260d0206c82035c167262c58",
     ".github/workflows/workflow-v2-verify.yml": "9a80943b087698e49d8e2b24e3dedd7c31370e00164efc17340a574b582417b2",
     "tools/workflow/bootstrap.py": "e7567a200a0c33d72c996efb48927845d4220d4d7d2d651e6f0e059ebb02f97a",
-    "tools/workflow/checks.py": "bff526c8bf9d0f3a707ba865e5356047c06153d7761bf2b608c90e25558eea9b",
-    "tools/workflow/core.py": "17de4f60dd677102b6b827769b39fdb5872f95aaf4d010fc3d0d5efdf4a3df7c",
+    "tools/workflow/checks.py": "5c0ebfc8de1dee3220c3be63f24dce538003e6ef35cfbd08ae46c94e20416623",
+    "tools/workflow/core.py": "e0daa6492be2ab11b9ea24606f50ba8702f66fd871022790f02e077758e7de8d",
     "tools/workflow/migration.py": "2568f4d9f64c3c80472399bb908054960cd8c08035d6c8c68ad583c86ea9f295",
     "tools/workflow/records.py": "02771f8b7bd49a61acc831e8b4071561fe4a8ab7e4fcf0651b1463f05fe220ad",
-    "tools/workflow/setup.py": "3618f542406c7a8863c391a9012e5a60e6c100b395d70ca00337a4993e5d9615",
+    "tools/workflow/setup.py": "2daa75b822727e2b15a4ccf8a11e8887c62def210c2ce7b5b29730b7e78c35b8",
     "tools/workflow/workflow.py": "f98efdbd742bfeff2370f84d3b52dce8a3c0dfe4bdbc76de3790f6c78f66c9ee"
   },
   "agents_block_hash": "c006e7792014c808cdc3d9e78a0fed87766b1d2517282f590bee6209fd3f6ede",

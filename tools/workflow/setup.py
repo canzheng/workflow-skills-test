@@ -8,7 +8,7 @@ import tempfile
 
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
                   SOURCE_URL, REQUIRED_ASSETS, block, config, digest, git, ignore_block, load, manifest,
-                  owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy)
+                  owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy, valid_bundle_version)
 
 
 def source_bundle(source, revision):
@@ -17,7 +17,7 @@ def source_bundle(source, revision):
     source = repository(source)
     git(source, 'cat-file', '-e', revision + '^{commit}')
     spec = load(safe(source, '.workflow/bundle.json'))
-    if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not isinstance(spec.get('bundle_version'), str) or not isinstance(spec.get('assets'), dict) or not re.fullmatch(r'2\.\d+\.\d+', spec['bundle_version']):
+    if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not valid_bundle_version(spec.get('bundle_version')) or not isinstance(spec.get('assets'), dict):
         raise Invalid('Unsupported source bundle schema')
     assets = spec['assets']
     if not REQUIRED_ASSETS <= set(assets.values()):

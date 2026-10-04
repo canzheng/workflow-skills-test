@@ -8,7 +8,7 @@ import subprocess
 from urllib.parse import unquote, urlsplit
 
 from core import (Conflict, Invalid, SKILLS, CI_ASSETS, REQUIRED_ASSETS, START, block, config, dependency_policy, digest, finding, git, load,
-                  manifest, owned, relative, safe)
+                  manifest, owned, relative, safe, valid_bundle_version)
 from records import issue_findings
 
 SECTIONS = ('Assignment', 'Changes', 'Evidence', 'Documentation', 'Remaining')
@@ -132,7 +132,7 @@ def check(root, args):
             findings.append(finding('instructions.modified', 'AGENTS.md', 'Managed instruction block differs', 'Resolve ownership'))
     else:
         spec = load(safe(root, '.workflow/bundle.json'))
-        if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not isinstance(spec.get('bundle_version'), str) or not re.fullmatch(r'2\.\d+\.\d+', spec['bundle_version']) or not isinstance(spec.get('assets'), dict):
+        if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not valid_bundle_version(spec.get('bundle_version')) or not isinstance(spec.get('assets'), dict):
             raise Invalid('Invalid source bundle schema')
         destinations = set()
         for source, dest in spec['assets'].items():

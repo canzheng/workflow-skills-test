@@ -242,12 +242,16 @@ def owned(name):
                      '.github/workflows/workflow-v2-pr-metadata.yml'))
 
 
+def valid_bundle_version(value):
+    return isinstance(value, str) and re.fullmatch(r'2\.\d+\.\d+', value) is not None
+
+
 def manifest(root):
     p = safe(root, '.workflow/install-manifest.json')
     if not p.exists():
         return None
     m = load(p)
-    if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') not in (1, 2) or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not isinstance(m.get('bundle_version'), str):
+    if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') not in (1, 2) or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not valid_bundle_version(m.get('bundle_version')):
         raise Invalid('Invalid installation manifest')
     if m['schema_version'] == 2:
         source_url(m.get('source_url'))
