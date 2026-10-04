@@ -64,14 +64,15 @@ def inspect(root):
                     if '/' in change:
                         raise Invalid('Change ID must be one directory name')
                     active = safe(root, 'openspec/changes/' + change)
-                    archived = list((root / 'openspec/changes/archive').glob('*-' + change))
-                    matches = ([active] if active.is_dir() else []) + [p for p in archived if p.is_dir() and not p.is_symlink()]
+                    archive = safe(root, 'openspec/changes/archive')
+                    archived = [safe(root, p.relative_to(root).as_posix()) for p in archive.glob('*-' + change)]
+                    matches = ([active] if active.is_dir() else []) + [p for p in archived if p.is_dir()]
                     if len(matches) == 1:
                         change_path = matches[0].relative_to(root).as_posix()
                     elif phase != 'DONE':
                         findings.append(finding('migration.change', feature_path or ledger_name, 'Missing/ambiguous OpenSpec change for ' + fid, 'Reconcile original change/evidence before migration'))
                 except Invalid:
-                    findings.append(finding('migration.change', feature_path or ledger_name, 'Unsafe change ID for ' + fid, 'Map the original change manually'))
+                    findings.append(finding('migration.change', feature_path or ledger_name, 'Unsafe change ID/path for ' + fid, 'Map the original change manually'))
             elif phase not in ('DONE', 'BACKLOG'):
                 findings.append(finding('migration.change', feature_path or ledger_name, 'Missing OpenSpec Change metadata for ' + fid, 'Resolve known-format change link'))
             if phase != 'DONE':

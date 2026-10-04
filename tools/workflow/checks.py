@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from urllib.parse import unquote, urlsplit
 
-from core import (Conflict, Invalid, SKILLS, CI_ASSETS, START, block, config, dependency_policy, digest, finding, git, load,
+from core import (Conflict, Invalid, SKILLS, CI_ASSETS, RUNTIME_ASSETS, START, block, config, dependency_policy, digest, finding, git, load,
                   manifest, owned, relative, safe)
 from records import issue_findings
 
@@ -139,9 +139,9 @@ def check(root, args):
             destinations.add(dest)
             if not safe(root, source).is_file():
                 findings.append(finding('bundle.missing', source, 'Production asset missing', 'Assemble complete bundle before installation'))
-        required = {'.agents/skills/' + s + '/SKILL.md' for s in SKILLS} | set(CI_ASSETS) | {'tools/workflow/bootstrap.py'}
+        required = {'.agents/skills/' + s + '/SKILL.md' for s in SKILLS} | set(CI_ASSETS) | set(RUNTIME_ASSETS)
         if not required <= destinations:
-            findings.append(finding('bundle.incomplete', '.workflow/bundle.json', 'Required skill or consumer workflow omitted', 'Include all three canonical skills and both consumer workflows'))
+            findings.append(finding('bundle.incomplete', '.workflow/bundle.json', 'Required skill, consumer workflow or installed runtime omitted', 'Include all canonical skills, both workflows and every runtime module'))
     for s in SKILLS:
         p = safe(root, '.agents/skills/' + s + '/SKILL.md')
         if not p.is_file():

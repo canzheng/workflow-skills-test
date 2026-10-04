@@ -7,7 +7,7 @@ import shutil
 import tempfile
 
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
-                  SOURCE_URL, block, config, digest, git, ignore_block, load, manifest,
+                  SOURCE_URL, RUNTIME_ASSETS, block, config, digest, git, ignore_block, load, manifest,
                   owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy)
 
 
@@ -20,8 +20,7 @@ def source_bundle(source, revision):
     if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not isinstance(spec.get('bundle_version'), str) or not isinstance(spec.get('assets'), dict) or not re.fullmatch(r'2\.\d+\.\d+', spec['bundle_version']):
         raise Invalid('Unsupported source bundle schema')
     assets = spec['assets']
-    runtime = ('workflow.py', 'core.py', 'setup.py', 'bootstrap.py', 'checks.py', 'records.py', 'migration.py')
-    required = ['.agents/skills/' + s + '/SKILL.md' for s in SKILLS] + list(CI_ASSETS) + ['tools/workflow/' + p for p in runtime]
+    required = ['.agents/skills/' + s + '/SKILL.md' for s in SKILLS] + list(CI_ASSETS) + list(RUNTIME_ASSETS)
     if any(p not in assets.values() for p in required):
         raise Conflict('Incomplete production bundle: skills, consumer workflows and all installed runtime modules are required')
     paths = {'.workflow/bundle.json', *assets.keys()}
