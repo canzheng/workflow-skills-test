@@ -13,8 +13,27 @@
         "check",
         "--repo",
         "."
+      ],
+      [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
       ]
     ],
-    "integration": []
+    "integration": [
+      [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    ]
   }
 }
