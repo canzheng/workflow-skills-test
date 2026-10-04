@@ -8,7 +8,7 @@ import tempfile
 
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
                   SOURCE_URL, block, config, digest, git, ignore_block, load, manifest,
-                  owned, repository, safe, shared, shared_files, source_url)
+                  owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy)
 
 
 def source_bundle(source, revision):
@@ -218,6 +218,7 @@ def setup(args):
             changes['AGENTS.md'] = new_text.encode()
         ignores = IGNORE_START + '\n' + '\n'.join('/.agents/skills/' + s + '/' for s in SKILLS) + '\n' + IGNORE_END
         new_ignore = ignore_text.replace(current_ignore, ignores, 1) if current_ignore else ignore_text + ('\n' if ignore_text and not ignore_text.endswith('\n') else '') + ignores + '\n'
+        effective_ignore_policy(root, assets, proposed=new_ignore)
         if new_ignore != ignore_text:
             changes['.gitignore'] = new_ignore.encode()
         if not cp.exists():

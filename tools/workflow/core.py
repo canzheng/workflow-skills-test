@@ -4,6 +4,7 @@ import json
 import pathlib
 import re
 import subprocess
+import tempfile
 
 START = '<!-- workflow-v2:start -->'
 END = '<!-- workflow-v2:end -->'
@@ -161,11 +162,63 @@ def dependency_policy(root, m):
         safe(root, name)
         if name not in m['files']:
             raise Conflict('Unmanaged shared dependency asset: ' + name)
-    for name in m['files']:
-        if shared(name):
-            result = subprocess.run(['git', '-C', str(root), 'check-ignore', '--no-index', name], capture_output=True, check=False)
-            if result.returncode:
-                raise Conflict('Shared dependency path is not ignored: ' + name)
+    effective_ignore_policy(root, m['files'])
+
+
+def effective_ignore_policy(root, names, proposed=None):
+    """Read Git's effective policy, including nested/global/info rules, before writes."""
+    skills_root = safe(root, '.agents/skills')
+    projects = {'.agents/skills/workflow-project-trackability-probe/SKILL.md'}
+    for p in skills_root.rglob('*') if skills_root.exists() else ():
+        name = p.relative_to(root).as_posix()
+        if shared(name) or shared(name + '/'):
+            continue
+        safe(root, name)
+        if p.is_file():
+            projects.add(name)
+        elif p.is_dir():
+            projects.add(name + '/workflow-project-trackability-probe.md')
+    required = {name for name in names if shared(name)}
+    candidates = sorted(required | projects)
+
+    def inspect(worktree):
+        command = ['git', '-C', str(root)]
+        if worktree is not None:
+            command += ['--work-tree=' + str(worktree)]
+            # Relative repository excludes must continue to resolve at the real root.
+            exclude = subprocess.run(['git', '-C', str(root), 'config', '--path', '--get', 'core.excludesFile'], capture_output=True, check=False)
+            if exclude.returncode not in (0, 1):
+                raise Invalid('Cannot inspect repository exclude configuration')
+            if exclude.returncode == 0:
+                path = pathlib.Path(exclude.stdout.decode().strip())
+                command += ['-c', 'core.excludesFile=' + str(path if path.is_absolute() else root / path)]
+        result = subprocess.run(command + ['check-ignore', '--no-index', '-z', '--stdin'],
+                                input=('\0'.join(candidates) + '\0').encode(), capture_output=True, check=False)
+        if result.returncode not in (0, 1):
+            raise Invalid('Cannot inspect effective shared/project skill ignore policy')
+        ignored = set(result.stdout.decode().split('\0')) - {''}
+        if required - ignored:
+            raise Conflict('Shared dependency path is not ignored: ' + sorted(required - ignored)[0])
+        if projects & ignored:
+            raise Conflict('Project-specific skill path is ignored; narrow project ignore policy: ' + sorted(projects & ignored)[0])
+
+    if proposed is None:
+        inspect(None)
+    else:
+        # Preview the proposed root policy without touching project files or index.
+        with tempfile.TemporaryDirectory(prefix='wf2-ignore-preview-') as directory:
+            preview = pathlib.Path(directory)
+            (preview / '.gitignore').write_text(proposed, encoding='utf-8')
+            agents = safe(root, '.agents')
+            for p in agents.rglob('.gitignore') if agents.exists() else ():
+                name = p.relative_to(root).as_posix()
+                safe(root, name)
+                dest = preview / name
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(p.read_bytes())
+            for name in candidates:
+                (preview / name).parent.mkdir(parents=True, exist_ok=True)
+            inspect(preview)
 
 
 def owned(name):
