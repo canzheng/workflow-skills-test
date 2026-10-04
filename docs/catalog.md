@@ -18,6 +18,9 @@ Show on a missing file returns {} without creating it. A valid empty object is a
 
 Catalog files use UTF-8 JSON, independent of process locale, mapping nonempty
 case-sensitive ingredient IDs to nonnegative integer grams.
+CLI identifier arguments use UTF-8; raw argument bytes are recovered through the
+OS filesystem encoding before decoding as text, including under an ASCII locale.
+Invalid UTF-8 identifiers fail without changing data. Direct Python calls accept text.
 Zero is valid; booleans/floats/negative values, duplicate IDs and malformed data fail.
 Excessively nested JSON is rejected with flat-schema guidance and no traceback;
 show/add leave that invalid file unchanged. Schema validation rejects arrays and

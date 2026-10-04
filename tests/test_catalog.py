@@ -33,12 +33,19 @@ class CatalogTests(unittest.TestCase):
     def test_utf8_catalog_round_trips_under_ascii_process_locale(self):
         self.path.write_text('{"jalape\u00f1o": 3}', encoding='utf-8')
         ascii_environment = dict(os.environ, LC_ALL='C', LANG='C', PYTHONUTF8='0', PYTHONCOERCECLOCALE='0')
-        for args, expected in [(('show',), {'jalape\u00f1o': 3}), (('add', 'salt', '5'), {'jalape\u00f1o': 3, 'salt': 5})]:
+        for args, expected in [(('show',), {'jalape\u00f1o': 3}), (('add', 'caf\u00e9', '5'), {'jalape\u00f1o': 3, 'caf\u00e9': 5})]:
             with self.subTest(args=args):
                 result = subprocess.run([sys.executable, '-m', 'app.catalog', '--file', str(self.path), *args], cwd=ROOT, capture_output=True, text=True, env=ascii_environment)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(json.loads(result.stdout), expected)
                 self.assertEqual(json.loads(self.path.read_text(encoding='utf-8')), expected)
+        original = self.path.read_bytes()
+        for identifier in ['jalape\u00f1o', b'\xff']:
+            result = subprocess.run([sys.executable, '-m', 'app.catalog', '--file', str(self.path), 'add', identifier, '9'], cwd=ROOT, capture_output=True, text=True, env=ascii_environment)
+            self.assertEqual(result.returncode, 1, result.stderr)
+            self.assertTrue(result.stderr.startswith('Error: '))
+            self.assertNotIn('Traceback', result.stderr)
+            self.assertEqual(self.path.read_bytes(), original)
 
     def test_duplicate_negative_noninteger_and_empty_id_leave_bytes_unchanged(self):
         self.assertEqual(self.cli('add', 'oats', '500').returncode, 0)

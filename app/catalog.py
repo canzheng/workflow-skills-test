@@ -82,7 +82,16 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         path = target_path(args.file)
-        catalog = add(path, args.identifier, args.grams) if args.operation == 'add' else load(path)
+        if args.operation == 'add':
+            identifier = args.identifier
+            if argv is None:
+                try:
+                    identifier = os.fsencode(identifier).decode('utf-8')
+                except UnicodeError as error:
+                    raise ValueError('Ingredient ID arguments must be valid UTF-8 text') from error
+            catalog = add(path, identifier, args.grams)
+        else:
+            catalog = load(path)
         print(json.dumps(catalog, sort_keys=True), flush=True)
         return 0
     except (ValueError, OSError) as exc:
