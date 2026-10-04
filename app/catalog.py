@@ -38,7 +38,11 @@ def target_path(value):
 def load(path):
     if not path.exists():
         return {}
-    return validate(json.loads(path.read_text(), object_pairs_hook=unique_object))
+    try:
+        data = json.loads(path.read_text(), object_pairs_hook=unique_object)
+    except RecursionError as error:
+        raise ValueError('Catalog must be a flat JSON object mapping IDs to nonnegative integer grams; excessive nesting is invalid') from error
+    return validate(data)
 
 
 def add(path, identifier, grams):

@@ -18,6 +18,8 @@ Show on a missing file returns {} without creating it. A valid empty object is a
 
 Catalog JSON maps nonempty case-sensitive ingredient IDs to nonnegative integer grams.
 Zero is valid; booleans/floats/negative values, duplicate IDs and malformed data fail.
+Excessively nested JSON is rejected with flat-schema guidance and no traceback;
+show/add leave that invalid file unchanged.
 CLI input/type errors exit 2; data/path/operation errors exit 1 with an actionable
 stderr explanation. Show and successful add print the complete sorted JSON object.
 Validation and pre-replacement storage failures leave the original bytes unchanged.
