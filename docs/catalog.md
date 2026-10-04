@@ -16,7 +16,8 @@ Use a new file for each rerun: add rejects existing IDs rather than updating the
 paths are supported; the parent must exist and symlink targets are rejected.
 Show on a missing file returns {} without creating it. A valid empty object is allowed.
 
-Catalog JSON maps nonempty case-sensitive ingredient IDs to nonnegative integer grams.
+Catalog files use UTF-8 JSON, independent of process locale, mapping nonempty
+case-sensitive ingredient IDs to nonnegative integer grams.
 Zero is valid; booleans/floats/negative values, duplicate IDs and malformed data fail.
 Excessively nested JSON is rejected with flat-schema guidance and no traceback;
 show/add leave that invalid file unchanged. Schema validation rejects arrays and
