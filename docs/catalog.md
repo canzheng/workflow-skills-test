@@ -20,10 +20,17 @@ Catalog JSON maps nonempty case-sensitive ingredient IDs to nonnegative integer 
 Zero is valid; booleans/floats/negative values, duplicate IDs and malformed data fail.
 CLI input/type errors exit 2; data/path/operation errors exit 1 with an actionable
 stderr explanation. Show and successful add print the complete sorted JSON object.
-A failed add leaves the original bytes unchanged. Writes use a same-directory staged
+Validation and pre-replacement storage failures leave the original bytes unchanged.
+The successful replacement commits the data before result output. If stdout fails
+(for example a closed pipe), add may exit nonzero after committing; use show to
+check the catalog before retrying rather than assuming rollback.
+Writes use a same-directory staged
 file and atomic replacement; existing file mode is preserved, new files use private
 temporary-file permissions. Permission and replacement errors are surfaced, with
-staging cleaned. There is no concurrent-writer lock or crash-durable directory fsync;
+best-effort staging cleanup. If permissions prevent cleanup, the error reports both
+the original failure and cleanup failure, including the staged path. After restoring
+permissions, inspect the catalog and remove that reported `.pantry-*` residue;
+do not treat it as committed data. There is no concurrent-writer lock or crash-durable directory fsync;
 this bounded single-writer pilot is not a multi-user database.
 
 Run configured local verification:

@@ -57,9 +57,13 @@ def add(path, identifier, grams):
         if path.exists():
             os.chmod(staged, path.stat().st_mode)
         os.replace(staged, path)
-    finally:
+    except BaseException as error:
         if staged is not None:
-            staged.unlink(missing_ok=True)
+            try:
+                staged.unlink(missing_ok=True)
+            except OSError as cleanup_error:
+                raise OSError(f'{error}; staging cleanup failed for {staged}: {cleanup_error}') from error
+        raise
     return catalog
 
 
@@ -75,7 +79,7 @@ def main(argv=None):
     try:
         path = target_path(args.file)
         catalog = add(path, args.identifier, args.grams) if args.operation == 'add' else load(path)
-        print(json.dumps(catalog, sort_keys=True))
+        print(json.dumps(catalog, sort_keys=True), flush=True)
         return 0
     except (ValueError, OSError) as exc:
         parser.exit(1, 'Error: ' + str(exc) + '\n')

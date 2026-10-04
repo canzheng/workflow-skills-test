@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -79,3 +80,52 @@ class CatalogTests(unittest.TestCase):
         self.path.chmod(0o640)
         catalog.add(self.path, 'salt', 10)
         self.assertEqual(self.path.stat().st_mode & 0o777, 0o640)
+
+    def test_real_permission_loss_reports_both_errors_and_recoverable_residue(self):
+        self.path.write_text('{"oats": 500}')
+        script = '''
+import os, pathlib, sys
+from unittest.mock import patch
+from app import catalog
+path = pathlib.Path(sys.argv[1])
+if os.geteuid() == 0:
+    os.chown(path.parent, 65534, 65534)
+    os.setuid(65534)
+replace = os.replace
+def revoke_permission(source, target):
+    path.parent.chmod(0o500)
+    return replace(source, target)
+try:
+    with patch.object(catalog.os, 'replace', side_effect=revoke_permission):
+        catalog.add(path, 'salt', 10)
+except OSError as error:
+    assert isinstance(error.__cause__, PermissionError), repr(error)
+    print(str(error))
+else:
+    raise AssertionError('replacement should be denied for an unprivileged writer')
+finally:
+    path.parent.chmod(0o700)
+'''
+        result = subprocess.run([sys.executable, '-c', script, str(self.path)], cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Permission denied', result.stdout)
+        self.assertIn('staging cleanup failed', result.stdout)
+        self.assertEqual(self.path.read_text(), '{"oats": 500}')
+        residue = list(self.path.parent.glob('.pantry-*'))
+        self.assertEqual(len(residue), 1)
+        self.assertIn(str(residue[0]), result.stdout)
+        residue[0].unlink()
+        self.assertEqual(catalog.add(self.path, 'salt', 10), {'oats': 500, 'salt': 10})
+
+    def test_closed_output_pipe_reports_failure_after_committing_data(self):
+        self.path.write_text('{"oats": 500}')
+        read_fd, write_fd = os.pipe()
+        os.close(read_fd)
+        try:
+            result = subprocess.run([sys.executable, '-m', 'app.catalog', '--file', str(self.path), 'add', 'lentils', '300'], cwd=ROOT, stdout=write_fd, stderr=subprocess.PIPE, text=True)
+        finally:
+            os.close(write_fd)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Broken pipe', result.stderr)
+        self.assertEqual(json.loads(self.cli('show').stdout), {'oats': 500, 'lentils': 300})
+        self.assertEqual(self.cli('add', 'lentils', '300').returncode, 1)
