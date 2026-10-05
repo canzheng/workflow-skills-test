@@ -2,7 +2,7 @@
   "schema_version": 4,
   "skill_storage": "ignored",
   "bundle_version": "2.0.0",
-  "source_revision": "cb6638ef6b3b43a942bb6a8b97f46f4281b8b64a",
+  "source_revision": "9af59a503bc9d51f1570bb0d3c9385eaba7f528d",
   "source_url": "https://github.com/canzheng/workflow-skills.git",
   "files": {
     ".agents/skills/workflow-deliver-issue/SKILL.md": "6ca436f267add702443941b45278c9e2cdf5d3800f6c01f9983ebb2830a96554",
@@ -16,15 +16,15 @@
     "docs/workflow/contract.md": "f383ffb59decb53918137cbe302cb553241b89c058dcefbc1df5d67dfdafc2f7",
     "docs/workflow/README.md": "d1fbee50e68747e38a2c9900715d3c16de1032251acce6b37639586ce32c22fc",
     "docs/workflow/development.md": "d92dc94e6304435e9662b053c2d36757be94b94c06c746e6c28ee89a1a98f180",
-    "docs/workflow/operations.md": "3b4dda4a03d6c863c3d4981cbc1978ecae94447606cace5742218593f7c25975",
+    "docs/workflow/operations.md": "0c61f282a0806346071b48cec4fe38187a44e1bf8d06603fb7f034d3c1534d66",
     ".github/workflows/workflow-v2-verify.yml": "73eca265c928baebd3af99d008ca3744a76504996b880090cf2c8a768561deed",
     "tools/workflow/bootstrap.py": "01c2c9193b1c528cbaedd1425c016dd370acd450fa3c14f99921d87dafa77074",
     "tools/workflow/checks.py": "a084f64a943f7ef6b1859c6de74c63b3590731fe125c9fa772de6caa0484b527",
-    "tools/workflow/core.py": "d11eda8b0f2a1e84dc31c752847f0d84f7bc1da4851b39e4cce69f7043f77533",
+    "tools/workflow/core.py": "43d0f8c2d9c5b0950211dbb30257e0ec3957e77a208adb5bec5d3b0b19935f1b",
     "tools/workflow/migration.py": "2568f4d9f64c3c80472399bb908054960cd8c08035d6c8c68ad583c86ea9f295",
     "tools/workflow/records.py": "02771f8b7bd49a61acc831e8b4071561fe4a8ab7e4fcf0651b1463f05fe220ad",
-    "tools/workflow/setup.py": "f18c859e965d13389ee1c24c719fe50a5afa77f6616f1eb28e35b65b987703cd",
-    "tools/workflow/workflow.py": "72d48f7f7c1f5f9208f79bc81a5a3249eef1d2449861d1d14d6577b3a4bcf95d"
+    "tools/workflow/setup.py": "11bce2e74b5d3f310ce95cf7cf1fa91b563d5db6171df642dacfaf83c5ce8c4c",
+    "tools/workflow/workflow.py": "379e99c215166d1bcb46f0d3219a2f1215a9db86ef5e55a29b4f12f877103a00"
   },
   "agents_block_hash": "4bb5fcb66fff932d320b60f9a984c3131e5e3ccde28e220a597e77a10780fd44",
   "gitignore_block_hash": "77031b630e9046903acb04d571c56696388c0429ede3c89fa1f8ead5f5522ead"

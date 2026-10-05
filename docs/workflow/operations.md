@@ -39,11 +39,17 @@ This is best-effort
 recovery, not a multi-process
 lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
+Fresh ignored adoption rejects shared namespaces present in the Git index, including
+deleted working copies and indexed files at a namespace root, before preview/apply.
 An existing schema-4 update preflights dependency/index policy before any writes.
 Force-tracked shared files, incomplete project staging or invalid staged policy are
 conflicts preserving files/manifest/raw index. Resolve the reviewed index conflict
 explicitly; setup never untracks a file for you. Schema-3 migration below remains
 an explicit storage change, distinct from updating an already ignored adoption.
+
+Plain-text diagnostics escape characters unsupported by the output encoding rather
+than raising a traceback. JSON keeps its standard escaped representation. This also
+applies to malformed/untrusted PR links; neither output mode executes PR content.
 
 ## Migrate a tracked adoption
 

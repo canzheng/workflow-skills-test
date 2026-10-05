@@ -186,7 +186,9 @@ def main(argv=None):
     else:
         print('OK' if code == 0 else 'FAILED')
         for f in findings:
-            print(f"{f['severity']} {f['code']} {f['path']}: {f['message']} -> {f['remediation']}")
+            line = f"{f['severity']} {f['code']} {f['path']}: {f['message']} -> {f['remediation']}"
+            encoding = sys.stdout.encoding or 'utf-8'
+            print(line.encode(encoding, errors='backslashreplace').decode(encoding))
         for key, value in extra.items():
             print(key + ': ' + json.dumps(value))
     return code

@@ -175,6 +175,15 @@ def shared_files(root):
     return result
 
 
+def untracked_shared_policy(root, tracked=None):
+    """Check the index even when shared paths are absent from the worktree."""
+    if tracked is None:
+        tracked = set(os.fsdecode(git(root, 'ls-files', '--cached', '-z')).split('\0')) - {''}
+    namespaces = {'.agents/skills/' + skill for skill in SKILLS}
+    if any(shared(name) or name in namespaces for name in tracked):
+        raise Conflict('Shared dependency remains tracked; review git rm --cached for only the three shared directories')
+
+
 def dependency_policy(root, m):
     """Validate project tracking and declared dependency storage without index writes."""
     if m['schema_version'] not in (3, 4):
@@ -196,8 +205,7 @@ def dependency_policy(root, m):
     required = {name for name in m['files'] if not ignored_dependency or not shared(name)} | PROJECT_FILES
     if ignored_dependency:
         required.add('.gitignore')
-        if any(shared(name) for name in tracked):
-            raise Conflict('Shared dependency remains tracked; review git rm --cached for only the three shared directories')
+        untracked_shared_policy(root, tracked)
     # A completely unstaged initial adoption is reviewable. Indexed/committed
     # managed assets identify adoption even when provenance was removed from the
     # index. Existing project-owned AGENTS/config alone are not that sentinel.

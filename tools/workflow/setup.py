@@ -10,7 +10,7 @@ import tempfile
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
                   SOURCE_URL, REQUIRED_ASSETS, block, config, digest, git, ignore_block, load, manifest,
                   owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy, valid_bundle_version,
-                  dependency_policy, relative)
+                  dependency_policy, relative, untracked_shared_policy)
 
 
 def source_bundle(source, revision):
@@ -256,6 +256,10 @@ def setup(args):
             raise Invalid('setup requires --source and --revision')
         version, assets = source_bundle(args.source, args.revision)
         url = source_url(getattr(args, 'source_url', SOURCE_URL))
+        if args.skill_storage == 'ignored' and (not old or old['schema_version'] == 4):
+            # Explicit tracked-to-ignored migration remains a caller-owned untrack;
+            # fresh/ignored adoption must reject indexed paths before any writes.
+            untracked_shared_policy(root)
         for name in shared_files(root):
             safe(root, name)
             if name not in assets and (not old or name not in old['files']):
