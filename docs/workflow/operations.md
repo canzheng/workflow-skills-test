@@ -30,6 +30,12 @@ paths and symlinks conflict before writes. Multi-file apply stages backups and
 restores originals on failure, or reports exact recoverable residuals. Review those
 before retrying. Setup never stages/commits or changes repository administration.
 
+An existing schema-4 update preflights dependency/index policy before any writes.
+Force-tracked shared files, incomplete project staging or invalid staged policy are
+conflicts preserving files/manifest/raw index. Resolve the reviewed index conflict
+explicitly; setup never untracks a file for you. Schema-3 migration below remains
+an explicit storage change, distinct from updating an already ignored adoption.
+
 ## Migrate a tracked adoption
 
 Existing schema-3 snapshots remain verifiable. Use the new source's setup preview
@@ -50,7 +56,9 @@ All non-shared manifest assets, provenance/config, AGENTS and .gitignore must re
 indexed after any adoption is staged/committed. Removing provenance cannot bypass
 verification. Canonical staged hashes, schemas, configured docs and instruction/ignore
 blocks must agree with regular files/no merge stages; good working bytes cannot hide
-broken staged content. Shared files must be absent from the index. Checks preserve
+broken staged content. Applicable nested ignore rules and new project-skill paths
+come from the same index snapshot, never from restored/missing working-tree copies.
+Valid differing project rules are preserved. Shared files must be absent from the index. Checks preserve
 both snapshots and never repair/stage. Initial completely unstaged adoption is
 reviewable only with trackable project files; commit it before host acceptance.
 

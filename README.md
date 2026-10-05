@@ -11,8 +11,8 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 The three shared skill directories/references are ignored pinned dependencies.
 Project policy/config/helpers/CI/docs/project skills and schema-4 provenance are
-tracked in Git. Source pin: `a75c3f20e5f4032568b1d1a5cb17d001fc781918`. Source-authored skills remain tracked.
-[Setup instructions](https://github.com/canzheng/workflow-skills/blob/a75c3f20e5f4032568b1d1a5cb17d001fc781918/README.md)
+tracked in Git. Source pin: `b5b8da40eef689852bdc3d7dfd644eeca4e878e8`. Source-authored skills remain tracked.
+[Setup instructions](https://github.com/canzheng/workflow-skills/blob/b5b8da40eef689852bdc3d7dfd644eeca4e878e8/README.md)
 distinguish first adoption, explicit updates and repeatable bootstrap. Only shared
 workflow directories are ignored; pantry-project remains tracked. Setup never stages,
 commits or silently migrates a tracked installation.
@@ -38,5 +38,12 @@ Cloud environment/discovery investigation is deferred by user approval. Optional
 explicit shared-skills-only global install is source-owned; it is never performed
 implicitly here. Test global and repo-local discovery separately to avoid duplicates.
 See [operations](docs/workflow/operations.md) for migration/conflicts and the
-[source Ubuntu handoff](https://github.com/canzheng/workflow-skills/blob/rewrite/workflow-skills-v2/docs/validation/ubuntu-workstation-handoff.md).
+[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/b5b8da40eef689852bdc3d7dfd644eeca4e878e8/docs/validation/ubuntu-workstation-session.md).
 No merge, completed Issue closure, administration or global changes occur here.
+
+The original workstation session verified startup discovery and actual v2 use at
+consumer9bd23d72/sourcea75c3f2. This reviewed runtime repair leaves all four shared
+file hashes unchanged. Current exact update/CI/review evidence belongs to Issue #7
+and PR #8; original evidence retains its original revisions. Existing schema-4 setup
+updates now refuse invalid dependency/index policy before writes, and staged nested
+ignore rules/project skills are validated from the index snapshot.

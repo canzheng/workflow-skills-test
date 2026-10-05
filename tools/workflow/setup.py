@@ -8,7 +8,8 @@ import tempfile
 
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
                   SOURCE_URL, REQUIRED_ASSETS, block, config, digest, git, ignore_block, load, manifest,
-                  owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy, valid_bundle_version)
+                  owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy, valid_bundle_version,
+                  dependency_policy)
 
 
 def source_bundle(source, revision):
@@ -192,6 +193,8 @@ def setup(args):
         if old:
             if not current or digest(current.encode()) != old['agents_block_hash']:
                 raise Conflict('Managed AGENTS block modified or missing')
+            if old['schema_version'] == 4:
+                dependency_policy(root, old)
             for name, h in old['files'].items():
                 p = safe(root, name)
                 if shared(name) and old['schema_version'] in (2, 4) and not p.exists():

@@ -29,6 +29,9 @@ The staged project commit candidate independently validates schemas, configured 
 managed hashes and instruction/ignore blocks with regular files/no merge stages.
 Intact working files cannot hide broken staged content. Shared dependencies must not
 be staged/tracked. Valid project-owned policy differences may remain between snapshots.
+Applicable nested ignore rules and project-skill paths come from the indexed
+snapshot during staged validation. Existing schema-4 setup updates preflight this
+dependency/index policy before writes, preserving invalid-index content for review.
 Initial completely unstaged adoption is reviewable only with trackable project files.
 Tracked schema-3 consumers remain verifiable until an explicit reviewed migration;
 setup never untracks/stages. Caller untracks only shared directories, then commits.

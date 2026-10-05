@@ -225,7 +225,7 @@ def staged_installation(root):
             if not policy or digest(policy.encode()) != m['gitignore_block_hash']:
                 raise Conflict('Managed ignore block differs from staged provenance')
             effective_ignore_policy(root, m['files'], proposed=read('.gitignore').decode(),
-                                    ignored_shared=True)
+                                    ignored_shared=True, staged_paths=entries, read_staged=read)
         c = validate_config(root, json.loads(read('.workflow/config.json')))
         for key in ('docs_index', 'contract'):
             read(c[key])
@@ -241,19 +241,30 @@ def staged_installation(root):
         raise Conflict('Staged workflow installation invalid: ' + str(exc)) from exc
 
 
-def effective_ignore_policy(root, names, proposed=None, ignored_shared=False):
+def effective_ignore_policy(root, names, proposed=None, ignored_shared=False,
+                            staged_paths=None, read_staged=None):
     """Read Git's effective policy, including nested/global/info rules, before writes."""
     skills_root = safe(root, '.agents/skills')
     projects = {'.agents/skills/workflow-project-trackability-probe/SKILL.md'}
-    for p in skills_root.rglob('*') if skills_root.exists() else ():
-        name = p.relative_to(root).as_posix()
-        if shared(name) or shared(name + '/'):
-            continue
-        safe(root, name)
-        if p.is_file():
-            projects.add(name)
-        elif p.is_dir():
-            projects.add(name + '/workflow-project-trackability-probe.md')
+    if staged_paths is None:
+        for p in skills_root.rglob('*') if skills_root.exists() else ():
+            name = p.relative_to(root).as_posix()
+            if shared(name) or shared(name + '/'):
+                continue
+            safe(root, name)
+            if p.is_file():
+                projects.add(name)
+            elif p.is_dir():
+                projects.add(name + '/workflow-project-trackability-probe.md')
+    else:
+        for name in staged_paths:
+            if name.startswith('.agents/skills/') and not shared(name):
+                relative(name)
+                projects.add(name)
+                for parent in pathlib.PurePosixPath(name).parents:
+                    if str(parent) == '.agents/skills':
+                        break
+                    projects.add((parent / 'workflow-project-trackability-probe.md').as_posix())
     dependency = {name for name in names if shared(name)} if ignored_shared else set()
     required = (set(names) - dependency) | PROJECT_FILES
     if ignored_shared:
@@ -290,24 +301,24 @@ def effective_ignore_policy(root, names, proposed=None, ignored_shared=False):
         with tempfile.TemporaryDirectory(prefix='wf2-ignore-preview-') as directory:
             preview = pathlib.Path(directory)
             (preview / '.gitignore').write_text(proposed, encoding='utf-8')
-            agents = safe(root, '.agents')
-            for p in agents.rglob('.gitignore') if agents.exists() else ():
-                name = p.relative_to(root).as_posix()
-                safe(root, name)
-                dest = preview / name
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_bytes(p.read_bytes())
+            policies = set()
             for name in candidates:
                 for parent in pathlib.PurePosixPath(name).parents:
                     if str(parent) == '.':
                         continue
                     ignore_name = (parent / '.gitignore').as_posix()
-                    p = safe(root, ignore_name)
-                    if p.is_file():
-                        dest = preview / ignore_name
-                        dest.parent.mkdir(parents=True, exist_ok=True)
-                        dest.write_bytes(p.read_bytes())
+                    policies.add(ignore_name)
                 (preview / name).parent.mkdir(parents=True, exist_ok=True)
+            for name in sorted(policies):
+                if staged_paths is None:
+                    p = safe(root, name)
+                    data = p.read_bytes() if p.is_file() else None
+                else:
+                    data = read_staged(name) if name in staged_paths else None
+                if data is not None:
+                    dest = preview / name
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_bytes(data)
             inspect(preview)
 
 
