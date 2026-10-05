@@ -213,6 +213,10 @@ Probe/authentication exception details and captured
 failure output are never emitted; a probe failure does not change credentials.
 Tool availability, successful local verification and native GitHub access remain
 separate evidence.
+Doctor reports a cyclic or inaccessible discovery root as a per-root warning,
+including resolution/stat/read failures or an existing nondirectory, and continues
+other catalogs and diagnostics. Missing optional catalogs remain silently absent.
+It preserves the inaccessible root and any symlinks; it does not repair global paths.
 Doctor reports an unreadable/undecodable discovery file as a per-file warning and
 continues scanning other entries, including duplicate-name checks. It preserves
 the file; this filesystem scan does not prove native host discovery. Invalid UTF-8
