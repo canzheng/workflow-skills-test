@@ -29,7 +29,8 @@ files around this policy. Existing unrelated rules/config/skills are preserved.
 Modified managed bytes or instruction/ignore blocks, unmanaged collisions, unsafe
 paths and symlinks conflict before writes. Initial adoption also rejects destinations
 owned by the Git index or HEAD, including deleted working copies and deleted policy
-files; it never recreates an unrelated deletion. Multi-file apply stages backups and
+files and file/gitlink ancestors of every destination; it never recreates an
+unrelated deletion or repurposes a deleted indexed file as a directory. Multi-file apply stages backups and
 restores only unchanged installer writes on failure. Concurrent edits, deletions,
 permission changes or symlink replacements are preserved and reported as recoverable
 residuals with original backups. Newly created directories are removed only when
@@ -61,7 +62,7 @@ and explicit apply to migrate to schema 5, preserving the index. Then review and
 untrack only the dependency namespaces without deleting working files:
 
 ```sh
-git rm --cached -r -- .agents/skills/workflow-design-to-backlog .agents/skills/workflow-deliver-issue .agents/skills/workflow-risk-review .agents/tools/workflow
+git rm --cached -r --ignore-unmatch -- .agents/skills/workflow-design-to-backlog .agents/skills/workflow-deliver-issue .agents/skills/workflow-risk-review .agents/tools/workflow
 ```
 
 This is a caller-authorized Git change, not an installer side effect. Stage reviewed
@@ -69,7 +70,11 @@ project/provenance/.gitignore changes and commit. Older schema-3/4 consumers wit
 the runtime in tools/workflow instead review the installer's removal of those
 owned files, stage those deletions, untrack any remaining shared skills, and
 update only workflow CLI references in project-owned config/docs to the new path.
-Do not delete unrelated project tools. Then commit. Until untracking/staging is complete,
+The command tolerates dependency paths already untracked or absent from older
+layouts. Stage the owned legacy runtime deletions as well; an indexed old shared
+Python file cannot pass a new-layout commit check. The seven canonical legacy
+filenames are reserved in the new-layout index, while unrelated project tools
+remain untouched. Bundles and provenance cannot mix old/new canonical runtimes. Then commit. Until untracking/staging is complete,
 checks can fail because the working adoption and staged commit are inconsistent.
 Old schema-1/2 consumers also require explicit reviewed setup; startup does not migrate.
 `--dependency-storage tracked` (legacy alias `--skill-storage tracked`) preserves schema-3 behavior for compatibility, not the default.
