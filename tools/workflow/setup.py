@@ -4,6 +4,7 @@ import os
 import pathlib
 import re
 import shutil
+import stat
 import tempfile
 
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
@@ -60,7 +61,7 @@ def preflight_destinations(root, names):
 
 
 def transaction(root, changes, fail_after=None):
-    """Stage all bytes and backups first; restore content/modes on apply failure."""
+    """Restore only our unchanged writes; retain backups for conflicting rollback."""
     if not changes:
         return
     preflight_destinations(root, changes)
@@ -79,7 +80,7 @@ def transaction(root, changes, fail_after=None):
                                  'mode': originals[name][1] if originals[name] is not None else None}
                           for i, name in enumerate(changes)}
         (stage / 'recovery-index.json').write_text(json.dumps(recovery_index, indent=2))
-        applied = []
+        applied = {}
         try:
             for i, (name, data) in enumerate(changes.items()):
                 p = safe(root, name)
@@ -92,9 +93,9 @@ def transaction(root, changes, fail_after=None):
                     if not parent.exists():
                         created_dirs.add(parent)
                 p.parent.mkdir(parents=True, exist_ok=True)
-                applied.append(name)
                 if data is None:
                     p.unlink(missing_ok=True)
+                    applied[name] = None
                 else:
                     # Per-file replacement is atomic; the multi-file operation is not.
                     tmp = p.with_name(p.name + '.wf2-staged')
@@ -104,28 +105,40 @@ def transaction(root, changes, fail_after=None):
                         shutil.copyfile(stage / str(i), tmp)
                         if originals[name]:
                             os.chmod(tmp, originals[name][1])
+                        installed = tmp.stat()
                         os.replace(tmp, p)
+                        # Capture our staged inode before replacement, rather than
+                        # accepting another process's subsequent edit as ours.
+                        applied[name] = (data, installed.st_mode, installed.st_dev, installed.st_ino)
                     finally:
-                        tmp.unlink(missing_ok=True)
+                        safe(root, name + '.wf2-staged').unlink(missing_ok=True)
                 if fail_after is not None and len(applied) == fail_after:
                     raise OSError('Injected apply failure')
         except Exception as exc:
             residuals = []
             for name in reversed(applied):
-                p = root / name
                 try:
+                    p = safe(root, name)
+                    current = None
+                    if p.exists():
+                        metadata = p.lstat()
+                        if not stat.S_ISREG(metadata.st_mode):
+                            raise Conflict('Rollback destination is not a regular file: ' + name)
+                        current = (p.read_bytes(), metadata.st_mode, metadata.st_dev, metadata.st_ino)
+                    if current != applied[name]:
+                        raise Conflict('Concurrent edit during rollback: ' + name)
                     original = originals[name]
                     if original is None:
                         p.unlink(missing_ok=True)
                     else:
                         p.write_bytes(original[0])
                         os.chmod(p, original[1])
-                except OSError:
+                except (OSError, Invalid, Conflict):
                     residuals.append(name)
             for p in sorted(created_dirs, key=lambda p: len(p.parts), reverse=True):
                 try:
-                    p.rmdir()
-                except OSError:
+                    safe(root, p.relative_to(root).as_posix()).rmdir()
+                except (OSError, Invalid):
                     pass
             if residuals:
                 recovery = pathlib.Path(tempfile.mkdtemp(prefix='wf2-recovery-'))

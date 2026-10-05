@@ -27,8 +27,10 @@ Project skills remain trackable. Never ignore all of .agents or force-add shared
 files around this policy. Existing unrelated rules/config/skills are preserved.
 Modified managed bytes or instruction/ignore blocks, unmanaged collisions, unsafe
 paths and symlinks conflict before writes. Multi-file apply stages backups and
-restores originals on failure, or reports exact recoverable residuals. Review those
-before retrying. Setup never stages/commits or changes repository administration.
+restores only unchanged installer writes on failure. Concurrent edits, deletions,
+permission changes or symlink replacements are preserved and reported as recoverable
+residuals with original backups. This is best-effort recovery, not a multi-process
+lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
 An existing schema-4 update preflights dependency/index policy before any writes.
 Force-tracked shared files, incomplete project staging or invalid staged policy are

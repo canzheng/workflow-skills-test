@@ -11,8 +11,8 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 The three shared skill directories/references are ignored pinned dependencies.
 Project policy/config/helpers/CI/docs/project skills and schema-4 provenance are
-tracked in Git. Source pin: `d1de33ac3c6e889ea0c189ec53b000fe0bfddecc`. Source-authored skills remain tracked.
-[Setup instructions](https://github.com/canzheng/workflow-skills/blob/d1de33ac3c6e889ea0c189ec53b000fe0bfddecc/README.md)
+tracked in Git. Source pin: `b444021557d1a67f2a2e04deb6bc4d87f2772bd5`. Source-authored skills remain tracked.
+[Setup instructions](https://github.com/canzheng/workflow-skills/blob/b444021557d1a67f2a2e04deb6bc4d87f2772bd5/README.md)
 distinguish first adoption, explicit updates and repeatable bootstrap. Only shared
 workflow directories are ignored; pantry-project remains tracked. Setup never stages,
 commits or silently migrates a tracked installation.
@@ -38,7 +38,7 @@ Cloud environment/discovery investigation is deferred by user approval. Optional
 explicit shared-skills-only global install is source-owned; it is never performed
 implicitly here. Test global and repo-local discovery separately to avoid duplicates.
 See [operations](docs/workflow/operations.md) for migration/conflicts and the
-[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/d1de33ac3c6e889ea0c189ec53b000fe0bfddecc/docs/validation/ubuntu-workstation-session.md).
+[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/b444021557d1a67f2a2e04deb6bc4d87f2772bd5/docs/validation/ubuntu-workstation-session.md).
 No merge, completed Issue closure, administration or global changes occur here.
 
 The original workstation session verified startup discovery and actual v2 use at
@@ -47,3 +47,7 @@ file hashes unchanged. Current exact update/CI/review evidence belongs to Issue 
 and PR #8; original evidence retains its original revisions. Existing schema-4 setup
 updates now refuse invalid dependency/index policy before writes, and staged nested
 ignore rules/project skills are validated from the index snapshot.
+
+Rollback restores only unchanged installer writes. Concurrent edits, deletions,
+permission changes and symlink replacements remain recoverable residuals with
+original backups. See the operations recovery guidance; this is best-effort recovery.
