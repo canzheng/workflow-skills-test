@@ -57,6 +57,8 @@ before mkdir. Only one creation event for the requested basename is accepted;
 rename, deletion, permission changes, watch invalidation or queue overflow reject
 the directory before it can receive captures or be published. The opened inode
 must still match the path and effective user; private storage must have mode0700.
+The final path/descriptor comparison follows event draining and defines the end
+of observation; a cached pre-drain pathname lookup is insufficient.
 This also rejects same-mode replacements between mkdir and open. Missing observation
 support fails closed; no permission-only ownership fallback is used. The watch ends
 after binding and is not an installer lock or a persistent workflow monitor.
