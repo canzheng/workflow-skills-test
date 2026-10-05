@@ -178,7 +178,13 @@ that exact pin, and verification chooses the runtime recorded in its manifest.
 PR metadata makes the same selection from the trusted base checkout only.
 
 Existing parent and ancestor directory identities are recorded before apply and
-revalidated before writes and rollback. A missing deleted file is restored only
+revalidated before writes and rollback. Apply deletion, staging/replacement/cleanup,
+restoration and created-directory operations use verified directory descriptors
+and relative names. Component-by-component no-follow opening binds each operation
+to the recorded parent inode even if its pathname is swapped during the call.
+A replaced namespace is reported as a recoverable residual; human files in its
+replacement directory are preserved. This requires the supported POSIX/Ubuntu
+directory-descriptor and no-follow operations. A missing deleted file is restored only
 through its unchanged parent chain; replaced, missing or symlinked parents remain
 recoverable residuals. Recovery records include expected parent directory devices
 and inodes beside original file bytes/modes. Permission changes on the same parent
