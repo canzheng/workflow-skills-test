@@ -189,3 +189,8 @@ through its unchanged parent chain; replaced, missing or symlinked parents remai
 recoverable residuals. Recovery records include expected parent directory devices
 and inodes beside original file bytes/modes. Permission changes on the same parent
 are preserved; created-directory cleanup retains its separate inode/mode checks.
+
+After replacement, the destination bytes/mode/device/inode must match the staged
+file identity. A swapped staging entry or a changed/missing destination is a
+recoverable conflict, not successful setup. Foreign destination content is retained
+and original bytes/mode are backed up for explicit recovery.
