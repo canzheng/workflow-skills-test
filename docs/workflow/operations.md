@@ -205,6 +205,12 @@ without existing tools/first commit. Resolve its README and Ubuntu handoff from
 the tracked manifest source_url/source_revision, never an implicit latest branch.
 Cloud is optional/deferred for this release.
 
+Doctor reports timed-out (ten-second deadline) or unexecutable tool/auth probes as warnings,
+marks that result unavailable and continues other diagnostics. Invalid version
+output is likewise unavailable. Probe/authentication exception details and captured
+failure output are never emitted; a probe failure does not change credentials.
+Tool availability, successful local verification and native GitHub access remain
+separate evidence.
 Doctor reports an unreadable/undecodable discovery file as a per-file warning and
 continues scanning other entries, including duplicate-name checks. It preserves
 the file; this filesystem scan does not prove native host discovery. Invalid UTF-8
