@@ -1,82 +1,117 @@
 # Workflow operations
 
-## Adoption and updates
+## One-time adoption and explicit updates
 
-Use an explicit workflow-skills checkout, full commit SHA and target Git root.
-Preview `setup --source /pinned/source --revision FULL_SHA --target . --repository owner/repo`;
-`--apply` performs the bounded adoption/update. The source-owned environment entrypoint
-can adopt a fresh repository without existing tools or a first commit. See the source
-README for its exact pinned fetch-and-run command. It is not copied into the consumer.
-
-Setup installs all three shared skills and risk references as commit-ready files in
-`.agents/skills/`, alongside utilities, policy/config, CI/templates and docs. Review
-and commit these files and `.workflow/install-manifest.json`. Schema 3 records
-`skill_storage: tracked`, source URL/full SHA, bundle version and managed hashes;
-this is provenance, not task state. Shared and project-specific skills must be
-trackable. No shared-skill ignore entries are added. Setup never stages or commits.
-
-Repeated identical setup is a no-op. Explicit updates require unmodified managed
-bytes/instruction blocks, verify canonical source objects and change the source pin
-only in the reviewed diff. Configuration remains project-owned. Modified files,
-unmanaged collisions, symlinks and unsafe targets fail before writes. Failed apply
-restores originals or reports recoverable residuals. No main/latest/global fallback.
-
-## Migrate an ignored-skill adoption
-
-Use the new source's setup dry-run/apply, not the old installed helper. For schema 2,
-setup verifies the old owned ignore-block hash and removes only that block, preserving
-other rules, project skills/config and the index. Missing ignored assets may be
-installed during this explicit update; modified assets or ignore blocks conflict.
-Broader/nested/global/info excludes that hide any installed asset, provenance,
-policy or project skill also
-conflict before writes. Resolve those rules deliberately; never force-add around them.
-Schema-1 tracked adopters can update without untracking their skills.
-
-Review the migration, stage the three shared directories and all owned adoption
-changes, then commit. Startup/check/doctor require every manifest asset, provenance/config and AGENTS in
-the index once any managed asset is staged or committed. Removing the manifest
-from the index does not reset adoption. Initial completely unstaged adoption with
-no managed assets in HEAD is reviewable before staging,
-but cannot establish a committed checkout or initial host discovery.
-Verification also reads canonical index blobs without changing the index. Staged
-provenance/config must be valid, configured documents must be indexed regular files,
-and managed hashes/AGENTS block must agree with staged provenance. Broken bytes,
-symlinks, gitlinks or unresolved merge stages fail even when working files are good.
-Valid project-owned policy edits may differ between staged and working snapshots.
-Review and correct the intended staged diff explicitly; verification never repairs
-or stages it. A coherent old schema-1 tracked snapshot can remain staged during an
-explicit update; commit the reviewed schema-3 result before host acceptance.
-
-## Repeatable environment verification
-
-An adopted consumer carries its skills in Git. A fresh clone must contain them before
-an agent starts; environment setup does not inject them. From the consumer root:
+Use the source checkout at an exact full commit, explicit consumer Git root and
+owner/name. Preview before apply:
 
 ```sh
+python3 /pinned/source/tools/workflow/workflow.py setup --source /pinned/source --revision FULL_40_CHAR_SHA --target /absolute/consumer --repository owner/repo --json
+```
+
+Repeat with `--apply` for authorized adoption/update. Setup installs tracked project
+policy/config/helpers/docs/CI/templates and materializes the three shared skill
+directories as ignored dependencies. Schema-4 .workflow/install-manifest.json tracks
+the full source commit, credential-free URL, asset hashes and owned ignore-block hash.
+It is provenance, not task state. Only these anchored root rules are added:
+
+```gitignore
+# workflow-v2-dependency:start
+/.agents/skills/workflow-design-to-backlog/
+/.agents/skills/workflow-deliver-issue/
+/.agents/skills/workflow-risk-review/
+# workflow-v2-dependency:end
+```
+
+Project skills remain trackable. Never ignore all of .agents or force-add shared
+files around this policy. Existing unrelated rules/config/skills are preserved.
+Modified managed bytes or instruction/ignore blocks, unmanaged collisions, unsafe
+paths and symlinks conflict before writes. Multi-file apply stages backups and
+restores originals on failure, or reports exact recoverable residuals. Review those
+before retrying. Setup never stages/commits or changes repository administration.
+
+## Migrate a tracked adoption
+
+Existing schema-3 snapshots remain verifiable. Use the new source's setup preview
+and explicit apply to migrate to schema 4, preserving the index. Then review and
+untrack only the shared directories without deleting working files:
+
+```sh
+git rm --cached -r -- .agents/skills/workflow-design-to-backlog .agents/skills/workflow-deliver-issue .agents/skills/workflow-risk-review
+```
+
+This is a caller-authorized Git change, not an installer side effect. Stage reviewed
+project/provenance/.gitignore changes and commit. Until untracking/staging is complete,
+checks can fail because the working adoption and staged commit are inconsistent.
+Old schema-1/2 consumers also require explicit reviewed setup; startup does not migrate.
+`--skill-storage tracked` preserves schema-3 behavior for compatibility, not the default.
+
+All non-shared manifest assets, provenance/config, AGENTS and .gitignore must remain
+indexed after any adoption is staged/committed. Removing provenance cannot bypass
+verification. Canonical staged hashes, schemas, configured docs and instruction/ignore
+blocks must agree with regular files/no merge stages; good working bytes cannot hide
+broken staged content. Shared files must be absent from the index. Checks preserve
+both snapshots and never repair/stage. Initial completely unstaged adoption is
+reviewable only with trackable project files; commit it before host acceptance.
+
+## Bootstrap before Ubuntu Codex startup
+
+From the exact consumer Git root, before starting a fresh agent:
+
+```sh
+python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
 python3 tools/workflow/workflow.py check --repo . --run-local --json
 python3 tools/workflow/workflow.py doctor --repo . --json
 git --no-optional-locks status --short --untracked-files=all
 ```
 
-These commands need no workflow-source fetch. Existing `bootstrap --apply` callers
-are supported as read-only verification of schema-3 shared assets; it never downloads,
-repairs, updates the pin or changes the index. Optional `--source /pinned/source`
-compares canonical source bytes offline. Missing/modified/extra/symlinked/untracked
-assets fail: restore the reviewed Git checkout or perform an explicit setup/update.
-Old schema-1/2 adoptions require reviewed setup before using new startup verification.
-The source-owned environment entrypoint also rejects missing config/wrong identity
-before writes and retains the installed pin on repeat, even with a newer entrypoint.
+Bootstrap fetches only the manifest's full commit when ignored files are missing,
+verifies canonical pinned skill bytes/hashes and writes only missing shared files.
+`--source /pinned/source` permits offline materialization. Omit --apply to preview;
+preview may fetch source into a temporary directory but does not change the consumer.
+A complete matching rerun is offline and returns changes:[]. Modified/extra/symlinked
+skills, policy/project edits, wrong source or unavailable pins fail without overwrite
+or main/latest fallback. Project files/pin/index remain unchanged. Schema-3 compatibility
+bootstrap verifies only and never recreates missing tracked files.
 
-Require exit0/ok:true; do not equate this with application acceptance or host discovery.
-The default config checks workflow integrity only. Add actual application commands
-when code exists. Consumer CI checks the committed skills directly after checkout,
-then runs declared local commands and mechanical checks. No bootstrap fetch is needed.
+Require exit0/ok:true; default local config proves workflow integrity, not application
+acceptance. Application argv arrays run with shell disabled; required integration
+commands run only in their intended environment. Empty integration arrays are not
+an environmental pass. Missing runtimes fail without selecting another interpreter.
 
-For Cloud/Ubuntu, confirm selected branch/SHA, committed manifest/skill bytes and
-actual initial host catalog. A skill's disk presence, explicit file read or a green
-CI job does not prove automatic discovery. Capture configured host cwd/project root
-separately from shell cwd; do not move skills outside the repo or install globally.
+Consumer verification CI performs the same exact-pin bootstrap before configured
+local commands/mechanical checks. Trusted-base metadata treats PR content as data;
+base adoption and observed required-check enforcement remain separate from YAML
+installation. Setup never configures protections or performs merge/Issue closure.
 
-Uninstall removes only unmodified managed assets/instruction blocks and retains
-modified residuals and project config. It never changes the index or repository
-administration. Doctor reports absent optional tools and unprobed capabilities honestly.
+## Optional global shared-skills installation
+
+Explicit source-owned `install-skills` defaults to ~/.agents/skills; --target chooses
+an absolute alternate skills root. It installs only three skills/references plus
+.workflow-skills-install.json provenance, never AGENTS/project config/helpers.
+Preview, then repeat with --apply:
+
+```sh
+python3 /pinned/source/tools/workflow/workflow.py install-skills --source /pinned/source --revision FULL_40_CHAR_SHA --json
+```
+
+Reruns are no-ops; updates preserve edited/unmanaged skills and unrelated names.
+`install-skills --uninstall --apply` removes only unmodified owned files and reports
+modified residuals. No repository setup/bootstrap implicitly writes global skills.
+Use one active discovery location per name; doctor reports duplicates rather than
+assuming repo-local precedence. A global skill resolves documents/policy from the
+selected project, not a global docs tree. Global installation alone does not adopt
+project policy or satisfy the repo-local dependency checks; test its host catalog/use
+separately in a project without local shared copies. Do not change authentication.
+
+## Recovery and evidence
+
+Uninstall via setup --target /absolute/consumer --uninstall --apply removes only
+unmodified owned assets/blocks and preserves project config and modified residuals.
+It never changes the index. Rollback residuals include a recovery-index.json mapping
+original paths to backup bytes/modes (null means newly created). Resolve deliberately.
+Return codes: 0 success, 1 conflict/failed check, 2 invalid invocation/configuration.
+Doctor is read-only; inaccessible host catalogs and unperformed remote capabilities
+remain unprobed. Record consumer/source SHAs, OS/runtime, initial catalog and actual
+skill use independently. A file/hash check, explicit file reading or green CI alone
+cannot establish automatic discovery, semantic review, merge or delivery.

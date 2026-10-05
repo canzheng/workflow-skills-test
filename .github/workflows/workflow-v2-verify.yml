@@ -17,6 +17,8 @@ jobs:
           python-version: '3.12'
       # Reviewed repository config supplies actual argv commands. Missing application
       # runtimes/dependencies fail; provide their preparation in those commands.
+      # Materialize only the three shared directories from the tracked exact pin.
+      - run: python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
       - run: python3 tools/workflow/workflow.py check --repo . --run-local --json > verification.json
       - uses: actions/upload-artifact@v4
         if: always()

@@ -1,3 +1,8 @@
 __pycache__/
 *.py[cod]
 .venv/
+# workflow-v2-dependency:start
+/.agents/skills/workflow-design-to-backlog/
+/.agents/skills/workflow-deliver-issue/
+/.agents/skills/workflow-risk-review/
+# workflow-v2-dependency:end

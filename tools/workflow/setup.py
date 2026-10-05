@@ -161,7 +161,7 @@ def setup(args):
             changes['AGENTS.md'] = text.replace(current, '', 1).encode()
         elif current:
             residuals.append('AGENTS.md managed block')
-        if old['schema_version'] == 2 and current_ignore:
+        if old['schema_version'] in (2, 4) and current_ignore:
             if digest(current_ignore.encode()) != old['gitignore_block_hash']:
                 residuals.append('.gitignore managed block')
             elif not any(shared(name) for name in remaining):
@@ -181,9 +181,9 @@ def setup(args):
             safe(root, name)
             if name not in assets and (not old or name not in old['files']):
                 raise Conflict('Unmanaged shared dependency asset: ' + name)
-        if current_ignore and (not old or old['schema_version'] != 2):
+        if current_ignore and (not old or old['schema_version'] not in (2, 4)):
             raise Conflict('Unmanaged shared-dependency gitignore block; resolve ownership first')
-        if old and old['schema_version'] == 2 and (not current_ignore or digest(current_ignore.encode()) != old['gitignore_block_hash']):
+        if old and old['schema_version'] in (2, 4) and (not current_ignore or digest(current_ignore.encode()) != old['gitignore_block_hash']):
             raise Conflict('Managed shared-dependency ignore block modified or missing')
         # Existing configuration is user owned and must remain valid.
         cp = safe(root, '.workflow/config.json')
@@ -194,7 +194,7 @@ def setup(args):
                 raise Conflict('Managed AGENTS block modified or missing')
             for name, h in old['files'].items():
                 p = safe(root, name)
-                if shared(name) and old['schema_version'] == 2 and not p.exists():
+                if shared(name) and old['schema_version'] in (2, 4) and not p.exists():
                     continue  # Legacy ignored dependencies may be absent in fresh clones.
                 if not p.is_file() or digest(p.read_bytes()) != h:
                     raise Conflict('Modified/missing managed file: ' + name)
@@ -206,9 +206,11 @@ def setup(args):
                 raise Conflict('Unmanaged target collision: ' + name)
             if not p.exists() or p.read_bytes() != data:
                 changes[name] = data
-        entry = (START + '\nUse the committed workflow-skills v2 in .agents/skills/. Read\n'
+        ignored_dependency = args.skill_storage == 'ignored'
+        entry = (START + '\nUse the repo-local workflow-skills v2 in .agents/skills/. Read\n'
                  'docs/workflow/contract.md and docs/workflow/README.md.\n'
-                 'Verify the tracked bundle with python3 tools/workflow/workflow.py check --repo .\n'
+                 'Run pinned bootstrap before Codex starts; then verify with\n'
+                 'python3 tools/workflow/workflow.py check --repo .\n'
                  'Historical planning directories do not select v1. Never use obsolete\n'
                  'repository wrappers or global installation here. Preserve unrelated rules.\n' + END)
         new_text = text.replace(current, entry, 1) if current else text + ('\n' if text and not text.endswith('\n') else '') + entry + '\n'
@@ -217,7 +219,10 @@ def setup(args):
         # Only the verified schema-2 owned block is removed on explicit update.
         # Other root/nested/global ignores are preserved and checked for conflicts.
         new_ignore = ignore_text.replace(current_ignore + ('\n' if current_ignore + '\n' in ignore_text else ''), '', 1) if current_ignore else ignore_text
-        effective_ignore_policy(root, assets, proposed=new_ignore)
+        if ignored_dependency:
+            dependency_ignore = (IGNORE_START + '\n' + '\n'.join('/.agents/skills/' + s + '/' for s in SKILLS) + '\n' + IGNORE_END)
+            new_ignore += ('\n' if new_ignore and not new_ignore.endswith('\n') else '') + dependency_ignore + '\n'
+        effective_ignore_policy(root, assets, proposed=new_ignore, ignored_shared=ignored_dependency)
         if new_ignore != ignore_text:
             changes['.gitignore'] = new_ignore.encode()
         if not cp.exists():
@@ -227,12 +232,89 @@ def setup(args):
                      docs_index='docs/workflow/README.md', contract='docs/workflow/contract.md',
                      openspec='on-demand', verification={'local': [['python3', 'tools/workflow/workflow.py', 'check', '--repo', '.']], 'integration': []})
             changes['.workflow/config.json'] = (json.dumps(c, indent=2) + '\n').encode()
-        m = dict(schema_version=3, skill_storage='tracked', bundle_version=version, source_revision=args.revision, source_url=url,
+        m = dict(schema_version=4 if ignored_dependency else 3, skill_storage=args.skill_storage, bundle_version=version, source_revision=args.revision, source_url=url,
                  files={name: digest(data) for name, data in assets.items()}, agents_block_hash=digest(entry.encode()))
+        if ignored_dependency:
+            m['gitignore_block_hash'] = digest(dependency_ignore.encode())
         data = (json.dumps(m, indent=2) + '\n').encode()
         p = safe(root, '.workflow/install-manifest.json')
         if not p.exists() or p.read_bytes() != data:
             changes['.workflow/install-manifest.json'] = data
+    preflight_destinations(root, changes)
+    if args.apply:
+        transaction(root, changes)
+    return list(changes), residuals
+
+
+def install_skills(args):
+    """Explicit optional global installation; never change project policy/auth/config."""
+    root = pathlib.Path(args.target).absolute()
+    if not pathlib.Path(args.target).is_absolute():
+        raise Invalid('Global/custom skill target must be an explicit absolute path')
+    for p in (root, *root.parents):
+        if p.is_symlink():
+            raise Invalid('Global skill target contains a symlink')
+        if p.exists() and not p.is_dir():
+            raise Invalid('Global skill target is not a directory')
+    pin_name = '.workflow-skills-install.json'
+    pin = safe(root, pin_name)
+    old = load(pin) if pin.exists() else None
+    if old is not None:
+        if (not isinstance(old, dict) or type(old.get('schema_version')) is not int or
+                old['schema_version'] != 1 or not isinstance(old.get('files'), dict) or
+                not re.fullmatch(r'[0-9a-f]{40}', str(old.get('source_revision', ''))) or
+                not valid_bundle_version(old.get('bundle_version'))):
+            raise Invalid('Invalid shared-skills installation provenance')
+        source_url(old.get('source_url'))
+        for name, h in old['files'].items():
+            if (not any(name.startswith(s + '/') for s in SKILLS) or
+                    not isinstance(h, str) or not re.fullmatch(r'[0-9a-f]{64}', h)):
+                raise Invalid('Unsafe shared-skills provenance path/hash')
+            safe(root, name)
+    changes, residuals = {}, []
+    if args.uninstall:
+        if not old:
+            return [], []
+        remaining = {}
+        for name, h in old['files'].items():
+            p = safe(root, name)
+            if p.exists() and (not p.is_file() or digest(p.read_bytes()) != h):
+                residuals.append(name); remaining[name] = h
+            elif p.exists():
+                changes[name] = None
+        changes[pin_name] = (json.dumps({**old, 'files': remaining}, indent=2) + '\n').encode() if residuals else None
+    else:
+        if not args.source or not args.revision:
+            raise Invalid('install-skills requires --source and --revision')
+        version, assets = source_bundle(args.source, args.revision)
+        prefix = '.agents/skills/'
+        skills = {name[len(prefix):]: data for name, data in assets.items() if shared(name)}
+        for s in SKILLS:
+            folder = safe(root, s)
+            if folder.exists() and not folder.is_dir():
+                raise Conflict('Shared skill destination is not a directory: ' + s)
+            for p in folder.rglob('*') if folder.exists() else ():
+                name = p.relative_to(root).as_posix(); safe(root, name)
+                if p.is_file() and (not old or name not in old['files']):
+                    raise Conflict('Unmanaged global shared-skill collision: ' + name)
+        if old:
+            for name, h in old['files'].items():
+                p = safe(root, name)
+                if not p.is_file() or digest(p.read_bytes()) != h:
+                    raise Conflict('Modified/missing global skill preserved: ' + name)
+                if name not in skills:
+                    changes[name] = None
+        for name, data in skills.items():
+            p = safe(root, name)
+            if p.exists() and (not old or name not in old['files']):
+                raise Conflict('Unmanaged global shared-skill collision: ' + name)
+            if not p.exists() or p.read_bytes() != data:
+                changes[name] = data
+        m = dict(schema_version=1, bundle_version=version, source_revision=args.revision,
+                 source_url=source_url(args.source_url), files={n: digest(d) for n, d in skills.items()})
+        data = (json.dumps(m, indent=2) + '\n').encode()
+        if not pin.exists() or pin.read_bytes() != data:
+            changes[pin_name] = data
     preflight_destinations(root, changes)
     if args.apply:
         transaction(root, changes)

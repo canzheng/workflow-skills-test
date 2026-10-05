@@ -35,7 +35,7 @@ def doctor(root, skill_roots=()):
             try:
                 dependency_policy(root, m)
             except Conflict as exc:
-                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Review tracked adoption and remove conflicting ignore rules'))
+                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Review adoption, shared dependency ignores and tracked project files'))
         for name, h in m['files'].items():
             p = safe(root, name)
             if not p.is_file() or digest(p.read_bytes()) != h:
@@ -94,13 +94,23 @@ def main(argv=None):
     s.add_argument('--source')
     s.add_argument('--revision')
     s.add_argument('--source-url', default=SOURCE_URL)
+    s.add_argument('--skill-storage', choices=('ignored', 'tracked'), default='ignored',
+                   help='Ignored pinned dependency by default; tracked is legacy compatibility')
     s.add_argument('--repository')
     s.add_argument('--apply', action='store_true')
     s.add_argument('--uninstall', action='store_true')
     s.add_argument('--json', action='store_true')
+    g = sub.add_parser('install-skills', help='Explicit shared-skills-only global/custom-root installation')
+    g.add_argument('--target', default=str(pathlib.Path.home() / '.agents/skills'))
+    g.add_argument('--source')
+    g.add_argument('--revision')
+    g.add_argument('--source-url', default=SOURCE_URL)
+    g.add_argument('--apply', action='store_true')
+    g.add_argument('--uninstall', action='store_true')
+    g.add_argument('--json', action='store_true')
     b = sub.add_parser('bootstrap')
     b.add_argument('--repo', required=True)
-    b.add_argument('--source', help='Optional canonical pinned source checkout for read-only verification')
+    b.add_argument('--source', help='Optional canonical pinned source checkout; otherwise missing ignored skills fetch the exact pin')
     b.add_argument('--apply', action='store_true')
     b.add_argument('--json', action='store_true')
     d = sub.add_parser('doctor')
@@ -127,8 +137,12 @@ def main(argv=None):
     args = p.parse_args(argv)
     extra, findings, code = {}, [], 0
     try:
-        if args.command == 'setup':
-            changes, residuals = setup(args)
+        if args.command in ('setup', 'install-skills'):
+            if args.command == 'install-skills':
+                from setup import install_skills
+                changes, residuals = install_skills(args)
+            else:
+                changes, residuals = setup(args)
             extra = dict(applied=args.apply, changes=changes, residuals=residuals)
             findings = [finding('uninstall.residual', x, 'Modified asset preserved', 'Review and remove manually if desired', 'warning') for x in residuals]
             code = 1 if residuals else 0

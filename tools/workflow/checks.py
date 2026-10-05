@@ -121,7 +121,7 @@ def check(root, args):
             try:
                 dependency_policy(root, m)
             except Conflict as exc:
-                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Review and commit complete tracked adoption; remove conflicting ignores'))
+                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Review tracked project adoption and ignored shared dependency policy'))
         for name, h in m['files'].items():
             p = safe(root, name)
             if not p.is_file() or digest(p.read_bytes()) != h:

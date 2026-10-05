@@ -13,9 +13,10 @@ work Ready; readiness approval alone never starts implementation. Ask to execute
 separately. Keep later scope and unresolved choices bounded; no per-capability calls,
 engineering-task Issue explosion or duplicate backlog document is required.
 
-Project policy/config, CI/templates, docs/specs, project skills and all three shared
-workflow skill directories are tracked in Git. `.workflow/install-manifest.json`
-records the exact source commit and managed hashes. Review/commit adoption once;
-fresh Cloud/Ubuntu checkouts contain the skills before the agent starts. Environment
-setup only verifies them. See [operations](operations.md) for adoption/migration and
-read-only verification; the environment is not a separate workflow version source.
+Project policy/config, helpers, CI/templates, docs/specs, project skills and the
+exact dependency manifest are tracked. Shared workflow skills are ignored repo-local
+dependencies in only their three directories. Bootstrap the full source pin before
+Ubuntu Codex starts; never fetch main/latest implicitly. Repeat matching bootstrap
+is offline/no-op and preserves project files/index. See [operations](operations.md)
+for adoption, migration, safe bootstrap and optional explicit global installation.
+The workstation/environment is not a hidden workflow version source.

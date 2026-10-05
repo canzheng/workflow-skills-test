@@ -1,6 +1,7 @@
 """Small shared validation and filesystem primitives; no task state."""
 import hashlib
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -80,7 +81,7 @@ def repository(value):
             raise Invalid('Repository path contains a symlink: ' + str(part))
     if not path.is_dir():
         raise Invalid('Repository target is missing: ' + str(path))
-    top = pathlib.Path(git(path, 'rev-parse', '--show-toplevel').decode().strip()).resolve()
+    top = pathlib.Path(os.fsdecode(git(path, 'rev-parse', '--show-toplevel')).strip()).resolve()
     if top != path.resolve():
         raise Invalid('Target must be the explicit Git repository root')
     return top
@@ -162,22 +163,32 @@ def shared_files(root):
 
 
 def dependency_policy(root, m):
-    """Validate committed/trackable shared skills without changing the index."""
-    if m['schema_version'] != 3:
-        raise Conflict('Existing adoption needs reviewed setup/update to tracked skills (schema 3)')
+    """Validate project tracking and declared dependency storage without index writes."""
+    if m['schema_version'] not in (3, 4):
+        raise Conflict('Existing adoption needs reviewed setup/update (schema 3 or 4)')
+    ignored_dependency = m['schema_version'] == 4
+    if ignored_dependency:
+        policy = safe(root, '.gitignore')
+        current = ignore_block(policy.read_text()) if policy.is_file() else None
+        if not current or digest(current.encode()) != m['gitignore_block_hash']:
+            raise Conflict('Managed shared-dependency ignore block modified or missing')
     for name in shared_files(root):
         safe(root, name)
         if name not in m['files']:
             raise Conflict('Unmanaged shared dependency asset: ' + name)
-    effective_ignore_policy(root, m['files'])
-    tracked = set(git(root, 'ls-files', '-z').decode().split('\0')) - {''}
-    committed = (set(git(root, 'ls-tree', '-r', '--name-only', '-z', 'HEAD').decode().split('\0')) - {''}
+    effective_ignore_policy(root, m['files'], ignored_shared=ignored_dependency)
+    tracked = set(os.fsdecode(git(root, 'ls-files', '-z')).split('\0')) - {''}
+    committed = (set(os.fsdecode(git(root, 'ls-tree', '-r', '--name-only', '-z', 'HEAD')).split('\0')) - {''}
                  if head_revision(root) else set())
-    required = set(m['files']) | PROJECT_FILES
+    required = {name for name in m['files'] if not ignored_dependency or not shared(name)} | PROJECT_FILES
+    if ignored_dependency:
+        required.add('.gitignore')
+        if any(shared(name) for name in tracked):
+            raise Conflict('Shared dependency remains tracked; review git rm --cached for only the three shared directories')
     # A completely unstaged initial adoption is reviewable. Indexed/committed
     # managed assets identify adoption even when provenance was removed from the
     # index. Existing project-owned AGENTS/config alone are not that sentinel.
-    adoption = set(m['files']) | {'.workflow/install-manifest.json'}
+    adoption = {name for name in m['files'] if not ignored_dependency or not shared(name)} | {'.workflow/install-manifest.json'}
     if adoption & (tracked | committed) and required - tracked:
         raise Conflict('Workflow installation path is not tracked: ' + sorted(required - tracked)[0] +
                        '; review and commit the complete adoption')
@@ -193,7 +204,7 @@ def staged_installation(root):
             continue
         metadata, name = record.split(b'\t', 1)
         mode, oid, stage = metadata.decode().split()
-        entries.setdefault(name.decode(), []).append((mode, oid, stage))
+        entries.setdefault(os.fsdecode(name), []).append((mode, oid, stage))
 
     def read(name):
         staged = entries.get(name, [])
@@ -205,12 +216,22 @@ def staged_installation(root):
         m = validate_manifest(root, json.loads(read('.workflow/install-manifest.json')))
         # An explicit schema-1 update may leave a coherent old tracked snapshot
         # in the index until the caller stages the migration; setup owns no index.
-        if m['schema_version'] not in (1, 3) or not REQUIRED_ASSETS <= m['files'].keys():
-            raise Conflict('Provenance must describe a complete tracked adoption')
+        if m['schema_version'] not in (1, 3, 4) or not REQUIRED_ASSETS <= m['files'].keys():
+            raise Conflict('Provenance must describe a complete adoption')
+        if m['schema_version'] == 4:
+            if any(shared(name) for name in entries):
+                raise Conflict('Shared dependency must not be staged/tracked')
+            policy = ignore_block(read('.gitignore').decode())
+            if not policy or digest(policy.encode()) != m['gitignore_block_hash']:
+                raise Conflict('Managed ignore block differs from staged provenance')
+            effective_ignore_policy(root, m['files'], proposed=read('.gitignore').decode(),
+                                    ignored_shared=True)
         c = validate_config(root, json.loads(read('.workflow/config.json')))
         for key in ('docs_index', 'contract'):
             read(c[key])
         for name, expected in m['files'].items():
+            if m['schema_version'] == 4 and shared(name):
+                continue  # Pinned dependency bytes are validated in the working tree/bootstrap.
             if digest(read(name)) != expected:
                 raise Conflict('Owned bytes differ from staged provenance: ' + name)
         b = block(read('AGENTS.md').decode())
@@ -220,7 +241,7 @@ def staged_installation(root):
         raise Conflict('Staged workflow installation invalid: ' + str(exc)) from exc
 
 
-def effective_ignore_policy(root, names, proposed=None):
+def effective_ignore_policy(root, names, proposed=None, ignored_shared=False):
     """Read Git's effective policy, including nested/global/info rules, before writes."""
     skills_root = safe(root, '.agents/skills')
     projects = {'.agents/skills/workflow-project-trackability-probe/SKILL.md'}
@@ -233,8 +254,11 @@ def effective_ignore_policy(root, names, proposed=None):
             projects.add(name)
         elif p.is_dir():
             projects.add(name + '/workflow-project-trackability-probe.md')
-    required = set(names) | PROJECT_FILES
-    candidates = sorted(required | projects)
+    dependency = {name for name in names if shared(name)} if ignored_shared else set()
+    required = (set(names) - dependency) | PROJECT_FILES
+    if ignored_shared:
+        required.add('.gitignore')
+    candidates = sorted(required | dependency | projects)
 
     def inspect(worktree):
         command = ['git', '-C', str(root)]
@@ -245,15 +269,17 @@ def effective_ignore_policy(root, names, proposed=None):
             if exclude.returncode not in (0, 1):
                 raise Invalid('Cannot inspect repository exclude configuration')
             if exclude.returncode == 0:
-                path = pathlib.Path(exclude.stdout.decode().strip())
+                path = pathlib.Path(os.fsdecode(exclude.stdout).strip())
                 command += ['-c', 'core.excludesFile=' + str(path if path.is_absolute() else root / path)]
         result = subprocess.run(command + ['check-ignore', '--no-index', '-z', '--stdin'],
-                                input=('\0'.join(candidates) + '\0').encode(), capture_output=True, check=False)
+                                input=os.fsencode('\0'.join(candidates) + '\0'), capture_output=True, check=False)
         if result.returncode not in (0, 1):
             raise Invalid('Cannot inspect effective shared/project skill ignore policy')
-        ignored = set(result.stdout.decode().split('\0')) - {''}
+        ignored = set(os.fsdecode(result.stdout).split('\0')) - {''}
         if required & ignored:
             raise Conflict('Workflow installation path is ignored; remove the conflicting rule: ' + sorted(required & ignored)[0])
+        if dependency - ignored:
+            raise Conflict('Shared dependency is not ignored: ' + sorted(dependency - ignored)[0])
         if projects & ignored:
             raise Conflict('Project-specific skill path is ignored; narrow project ignore policy: ' + sorted(projects & ignored)[0])
 
@@ -310,13 +336,15 @@ def manifest(root):
 
 
 def validate_manifest(root, m):
-    if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') not in (1, 2, 3) or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not valid_bundle_version(m.get('bundle_version')):
+    if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') not in (1, 2, 3, 4) or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not valid_bundle_version(m.get('bundle_version')):
         raise Invalid('Invalid installation manifest')
-    if m['schema_version'] in (2, 3):
+    if m['schema_version'] in (2, 3, 4):
         source_url(m.get('source_url'))
     if m['schema_version'] == 3 and m.get('skill_storage') != 'tracked':
         raise Invalid('Schema-3 adoption requires tracked skill storage')
-    if m['schema_version'] == 2:
+    if m['schema_version'] == 4 and m.get('skill_storage') != 'ignored':
+        raise Invalid('Schema-4 adoption requires ignored skill storage')
+    if m['schema_version'] in (2, 4):
         if not re.fullmatch(r'[0-9a-f]{64}', str(m.get('gitignore_block_hash', ''))):
             raise Invalid('Invalid shared-dependency ignore hash')
     for name, h in m['files'].items():
@@ -344,10 +372,10 @@ def head_revision(root):
 
 def content_identity(root):
     """Bind diagnostics/evidence to actual tracked and nonignored untracked bytes."""
-    names = set(git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').decode().split('\0')) - {''}
+    names = set(os.fsdecode(git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard')).split('\0')) - {''}
     m = manifest(root)
     dependency_modified = False
-    if m and m['schema_version'] in (2, 3):
+    if m and m['schema_version'] in (2, 3, 4):
         actual_shared = shared_files(root)
         names.update(actual_shared)
         dependency_modified = bool(actual_shared - m['files'].keys())
@@ -362,14 +390,14 @@ def content_identity(root):
         p = root / name
         # A tracked symlink is hashed as its link text, never its destination bytes.
         if p.is_symlink():
-            data = ('symlink:' + p.readlink().as_posix()).encode()
+            data = os.fsencode('symlink:' + p.readlink().as_posix())
         elif not p.exists():
             data = b'missing'
         elif p.is_file():
             data = p.read_bytes()
         else:
             data = b'non-file'
-        h.update(name.encode() + b'\0' + digest(data).encode() + b'\0')
+        h.update(os.fsencode(name) + b'\0' + digest(data).encode() + b'\0')
     revision = head_revision(root)
     return dict(revision=revision,
                 branch=git(root, 'branch', '--show-current').decode().strip(),
