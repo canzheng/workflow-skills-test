@@ -59,8 +59,8 @@ no-replace; ownership comes from the held descriptor rather than a post-mkdir pu
 lookup. Mismatches restore with no-replace; a recreated public path retains both
 entries and records the quarantine location in recovery-index.json.
 
-Linux has no conditional directory removal by an opened inode. Empty private storage
-and captured empty created directories are retained rather than removed through a
+Linux has no conditional unlink/rmdir by an opened inode. Private storage, captured
+files and empty created directories are retained rather than removed through a
 checked basename. Repository transactions use .git/.wf2-private-*; these recovery
 artifacts do not change the project worktree, index, configuration or ignore policy.
 Explicit shared-only installation uses TMPDIR (default system temporary directory).
@@ -68,7 +68,9 @@ Its storage must share the target filesystem; choose a suitable same-filesystem
 TMPDIR when necessary. Cross-device storage fails before project writes. Matching
 no-op reruns allocate no new storage. Review retained storage and recovery records
 before any manual cleanup; the installer does not automatically delete these
-private directories. In-place captured-descriptor edits still receive
+private files/directories. Retained files include displaced/deleted managed bytes;
+uninstall removes their project namespace, not these recovery copies. Observed
+captured-descriptor changes still receive
 concurrent_backup recovery. This is filesystem recovery storage, not workflow state.
 
 Fresh ignored adoption rejects shared namespaces present in the Git index, including
