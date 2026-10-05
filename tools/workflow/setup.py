@@ -10,7 +10,7 @@ import tempfile
 from core import (Conflict, Invalid, START, END, SKILLS, CI_ASSETS, IGNORE_START, IGNORE_END,
                   SOURCE_URL, REQUIRED_ASSETS, block, config, digest, git, ignore_block, load, manifest,
                   owned, repository, safe, shared, shared_files, source_url, effective_ignore_policy, valid_bundle_version,
-                  dependency_policy)
+                  dependency_policy, relative)
 
 
 def source_bundle(source, revision):
@@ -26,6 +26,11 @@ def source_bundle(source, revision):
     assets = spec['assets']
     if any(not isinstance(dest, str) for dest in assets.values()):
         raise Invalid('Source asset destinations must be repository-relative strings')
+    # Validate every entry before filesystem access, including non-skill assets
+    # that the optional shared-only installer will not materialize.
+    for name, dest in assets.items():
+        relative(name)
+        relative(dest)
     if not REQUIRED_ASSETS <= set(assets.values()):
         raise Conflict('Incomplete production bundle: required consumer assets omitted: ' + ', '.join(sorted(REQUIRED_ASSETS - set(assets.values()))))
     paths = {'.workflow/bundle.json', *assets.keys()}

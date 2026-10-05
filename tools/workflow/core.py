@@ -53,8 +53,8 @@ def git(root, *args):
 
 
 def relative(value):
-    if not isinstance(value, str) or not value or '\\' in value:
-        raise Invalid('Expected a nonempty repository-relative POSIX path')
+    if not isinstance(value, str) or not value or '\\' in value or '\0' in value:
+        raise Invalid('Expected a nonempty repository-relative POSIX path without NULs')
     p = pathlib.PurePosixPath(value)
     if p.is_absolute() or any(x in ('..', '.', '') for x in value.split('/')) or value.startswith('.git/') or value == '.git':
         raise Invalid('Unsafe repository-relative path: ' + value)
