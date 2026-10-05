@@ -29,7 +29,10 @@ Modified managed bytes or instruction/ignore blocks, unmanaged collisions, unsaf
 paths and symlinks conflict before writes. Multi-file apply stages backups and
 restores only unchanged installer writes on failure. Concurrent edits, deletions,
 permission changes or symlink replacements are preserved and reported as recoverable
-residuals with original backups. This is best-effort recovery, not a multi-process
+residuals with original backups. Newly created directories are removed only when
+their inode/mode still match and they remain empty; changed directories are retained
+and reported with creation metadata in recovery-index.json. This is best-effort
+recovery, not a multi-process
 lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
 An existing schema-4 update preflights dependency/index policy before any writes.

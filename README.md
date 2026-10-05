@@ -11,8 +11,8 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 The three shared skill directories/references are ignored pinned dependencies.
 Project policy/config/helpers/CI/docs/project skills and schema-4 provenance are
-tracked in Git. Source pin: `b444021557d1a67f2a2e04deb6bc4d87f2772bd5`. Source-authored skills remain tracked.
-[Setup instructions](https://github.com/canzheng/workflow-skills/blob/b444021557d1a67f2a2e04deb6bc4d87f2772bd5/README.md)
+tracked in Git. Source pin: `b36fab26859ba6b497fa926e766d948b8981b113`. Source-authored skills remain tracked.
+[Setup instructions](https://github.com/canzheng/workflow-skills/blob/b36fab26859ba6b497fa926e766d948b8981b113/README.md)
 distinguish first adoption, explicit updates and repeatable bootstrap. Only shared
 workflow directories are ignored; pantry-project remains tracked. Setup never stages,
 commits or silently migrates a tracked installation.
@@ -38,7 +38,7 @@ Cloud environment/discovery investigation is deferred by user approval. Optional
 explicit shared-skills-only global install is source-owned; it is never performed
 implicitly here. Test global and repo-local discovery separately to avoid duplicates.
 See [operations](docs/workflow/operations.md) for migration/conflicts and the
-[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/b444021557d1a67f2a2e04deb6bc4d87f2772bd5/docs/validation/ubuntu-workstation-session.md).
+[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/b36fab26859ba6b497fa926e766d948b8981b113/docs/validation/ubuntu-workstation-session.md).
 No merge, completed Issue closure, administration or global changes occur here.
 
 The original workstation session verified startup discovery and actual v2 use at
@@ -51,3 +51,6 @@ ignore rules/project skills are validated from the index snapshot.
 Rollback restores only unchanged installer writes. Concurrent edits, deletions,
 permission changes and symlink replacements remain recoverable residuals with
 original backups. See the operations recovery guidance; this is best-effort recovery.
+
+Rollback also retains newly created directories whose inode/mode changed or that
+contain concurrent content, and reports creation metadata for manual recovery.

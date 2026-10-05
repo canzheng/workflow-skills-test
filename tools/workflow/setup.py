@@ -65,8 +65,17 @@ def transaction(root, changes, fail_after=None):
     if not changes:
         return
     preflight_destinations(root, changes)
-    created_dirs = set()
+    created_dirs = {}
     originals = {}
+    def directory_name(path):
+        return path.relative_to(root).as_posix() if path != root and path.is_relative_to(root) else str(path)
+    def directory_metadata(path):
+        # Optional skill-only targets may start with missing root/ancestors.
+        # Revalidate their full path too; never follow a replaced parent symlink.
+        for part in (path, *path.parents):
+            if part.is_symlink():
+                raise Invalid('Symlink directory during rollback: ' + str(part))
+        return path.lstat()
     with tempfile.TemporaryDirectory(prefix='wf2-stage-') as td:
         stage = pathlib.Path(td)
         for i, (name, data) in enumerate(changes.items()):
@@ -87,12 +96,20 @@ def transaction(root, changes, fail_after=None):
                 now = (p.read_bytes(), p.stat().st_mode) if p.exists() else None
                 if now != originals[name]:
                     raise Conflict('Concurrent local edit detected: ' + name)
+                parents = []
                 for parent in p.parents:
-                    if parent == root:
+                    if parent.exists():
                         break
-                    if not parent.exists():
-                        created_dirs.add(parent)
-                p.parent.mkdir(parents=True, exist_ok=True)
+                    parents.append(parent)
+                for parent in reversed(parents):
+                    directory_metadata(parent.parent)
+                    parent.mkdir()
+                    metadata = directory_metadata(parent)
+                    created_dirs[parent] = (metadata.st_mode, metadata.st_dev, metadata.st_ino)
+                    recovery_index[directory_name(parent)] = {
+                        'kind': 'directory', 'backup': None, 'mode': None,
+                        'created_mode': metadata.st_mode, 'created_device': metadata.st_dev,
+                        'created_inode': metadata.st_ino}
                 if data is None:
                     p.unlink(missing_ok=True)
                     applied[name] = None
@@ -136,11 +153,18 @@ def transaction(root, changes, fail_after=None):
                 except (OSError, Invalid, Conflict):
                     residuals.append(name)
             for p in sorted(created_dirs, key=lambda p: len(p.parts), reverse=True):
+                name = directory_name(p)
                 try:
-                    safe(root, p.relative_to(root).as_posix()).rmdir()
-                except (OSError, Invalid):
-                    pass
+                    metadata = directory_metadata(p)
+                    if not stat.S_ISDIR(metadata.st_mode) or (metadata.st_mode, metadata.st_dev, metadata.st_ino) != created_dirs[p]:
+                        raise Conflict('Concurrent directory change during rollback: ' + name)
+                    p.rmdir()
+                except FileNotFoundError:
+                    pass  # already absent; never recreate a concurrent deletion
+                except (OSError, Invalid, Conflict):
+                    residuals.append(name)
             if residuals:
+                (stage / 'recovery-index.json').write_text(json.dumps(recovery_index, indent=2))
                 recovery = pathlib.Path(tempfile.mkdtemp(prefix='wf2-recovery-'))
                 shutil.copytree(stage, recovery, dirs_exist_ok=True)
                 raise Conflict('Rollback residuals: ' + ', '.join(residuals) + '; recoverable originals: ' + str(recovery)) from exc
