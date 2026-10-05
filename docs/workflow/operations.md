@@ -53,13 +53,23 @@ alongside original backups before retrying. This is best-effort recovery, not a
 multi-process lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
 Cleanup captures shared staging/removal names and newly created directories in
-exclusive mode-0700 private directories on the same filesystem before validating
-and discarding their actual identities. Mismatches are restored with no-replace;
-if a public path has been recreated, both entries are retained and the quarantine
-location is recorded in recovery-index.json. Empty unchanged private storage is
-removed after cleanup. In-place changes through an already-open captured descriptor
-still receive concurrent_backup recovery. This private transaction storage is not
-shared project policy and does not expand ignored dependency namespaces.
+exclusive mode-0700 private storage on the same filesystem before validating actual
+identities. New directories are created/opened there first, then published with
+no-replace; ownership comes from the held descriptor rather than a post-mkdir public
+lookup. Mismatches restore with no-replace; a recreated public path retains both
+entries and records the quarantine location in recovery-index.json.
+
+Linux has no conditional directory removal by an opened inode. Empty private storage
+and captured empty created directories are retained rather than removed through a
+checked basename. Repository transactions use .git/.wf2-private-*; these recovery
+artifacts do not change the project worktree, index, configuration or ignore policy.
+Explicit shared-only installation uses TMPDIR (default system temporary directory).
+Its storage must share the target filesystem; choose a suitable same-filesystem
+TMPDIR when necessary. Cross-device storage fails before project writes. Matching
+no-op reruns allocate no new storage. Review retained storage and recovery records
+before any manual cleanup; the installer does not automatically delete these
+private directories. In-place captured-descriptor edits still receive
+concurrent_backup recovery. This is filesystem recovery storage, not workflow state.
 
 Fresh ignored adoption rejects shared namespaces present in the Git index, including
 deleted working copies and indexed files at a namespace root, before preview/apply.
