@@ -1,5 +1,9 @@
 # Workflow development
 
+Installer mutations require Linux renameat2 and inotify directory creation
+observation. Unsupported atomic operations or lost observation fail closed; see
+operations for retained recovery copies and same-filesystem storage requirements.
+
 Python >=3.10 and Git run the installed utilities without Conda or global skills.
 Run `python3 .agents/tools/workflow/workflow.py check --repo .` for bundle/config/link
 checks, and the application verification commands declared in .workflow/config.json.

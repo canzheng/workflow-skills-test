@@ -52,6 +52,15 @@ to a concurrent_backup with concurrent_mode in recovery-index.json; inspect thes
 alongside original backups before retrying. This is best-effort recovery, not a
 multi-process lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
+Directory creation starts a short-lived Linux inotify watch on the opened parent
+before mkdir. Only one creation event for the requested basename is accepted;
+rename, deletion, permission changes, watch invalidation or queue overflow reject
+the directory before it can receive captures or be published. The opened inode
+must still match the path and effective user; private storage must have mode0700.
+This also rejects same-mode replacements between mkdir and open. Missing observation
+support fails closed; no permission-only ownership fallback is used. The watch ends
+after binding and is not an installer lock or a persistent workflow monitor.
+
 Cleanup captures shared staging/removal names and newly created directories in
 exclusive mode-0700 private storage on the same filesystem before validating actual
 identities. New directories are created/opened there first, then published with
