@@ -207,7 +207,9 @@ Cloud is optional/deferred for this release.
 
 Doctor reports timed-out (ten-second deadline) or unexecutable tool/auth probes as warnings,
 marks that result unavailable and continues other diagnostics. Invalid version
-output is likewise unavailable. Probe/authentication exception details and captured
+output is likewise unavailable, including empty output or an empty/whitespace-only
+first line. A later nonblank line does not substitute for the missing version header.
+Probe/authentication exception details and captured
 failure output are never emitted; a probe failure does not change credentials.
 Tool availability, successful local verification and native GitHub access remain
 separate evidence.
