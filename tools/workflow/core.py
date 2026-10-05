@@ -95,6 +95,10 @@ def load(path):
 
 def config(root):
     c = load(safe(root, '.workflow/config.json'))
+    return validate_config(root, c)
+
+
+def validate_config(root, c):
     if not isinstance(c, dict) or type(c.get('schema_version')) is not int or c['schema_version'] != 1 or c.get('workflow') != 'github-v2':
         raise Invalid('Unsupported workflow configuration schema/version')
     if not isinstance(c.get('repository'), str) or not re.fullmatch(r'[\w.-]+/[\w.-]+', c['repository']):
@@ -177,6 +181,43 @@ def dependency_policy(root, m):
     if adoption & (tracked | committed) and required - tracked:
         raise Conflict('Workflow installation path is not tracked: ' + sorted(required - tracked)[0] +
                        '; review and commit the complete adoption')
+    if adoption & (tracked | committed):
+        staged_installation(root)
+
+
+def staged_installation(root):
+    """Validate the commit candidate independently; never refresh/write the index."""
+    entries = {}
+    for record in git(root, 'ls-files', '--stage', '-z').split(b'\0'):
+        if not record:
+            continue
+        metadata, name = record.split(b'\t', 1)
+        mode, oid, stage = metadata.decode().split()
+        entries.setdefault(name.decode(), []).append((mode, oid, stage))
+
+    def read(name):
+        staged = entries.get(name, [])
+        if len(staged) != 1 or staged[0][0] not in ('100644', '100755') or staged[0][2] != '0':
+            raise Conflict('Required path is missing, unmerged or not a regular file: ' + name)
+        return git(root, '--no-replace-objects', 'cat-file', 'blob', staged[0][1])
+
+    try:
+        m = validate_manifest(root, json.loads(read('.workflow/install-manifest.json')))
+        # An explicit schema-1 update may leave a coherent old tracked snapshot
+        # in the index until the caller stages the migration; setup owns no index.
+        if m['schema_version'] not in (1, 3) or not REQUIRED_ASSETS <= m['files'].keys():
+            raise Conflict('Provenance must describe a complete tracked adoption')
+        c = validate_config(root, json.loads(read('.workflow/config.json')))
+        for key in ('docs_index', 'contract'):
+            read(c[key])
+        for name, expected in m['files'].items():
+            if digest(read(name)) != expected:
+                raise Conflict('Owned bytes differ from staged provenance: ' + name)
+        b = block(read('AGENTS.md').decode())
+        if not b or digest(b.encode()) != m['agents_block_hash']:
+            raise Conflict('Managed AGENTS block differs from staged provenance')
+    except ValueError as exc:
+        raise Conflict('Staged workflow installation invalid: ' + str(exc)) from exc
 
 
 def effective_ignore_policy(root, names, proposed=None):
@@ -265,6 +306,10 @@ def manifest(root):
     if not p.exists():
         return None
     m = load(p)
+    return validate_manifest(root, m)
+
+
+def validate_manifest(root, m):
     if not isinstance(m, dict) or type(m.get('schema_version')) is not int or m.get('schema_version') not in (1, 2, 3) or not isinstance(m.get('files'), dict) or not re.fullmatch(r'[0-9a-f]{40}', str(m.get('source_revision', ''))) or not valid_bundle_version(m.get('bundle_version')):
         raise Invalid('Invalid installation manifest')
     if m['schema_version'] in (2, 3):

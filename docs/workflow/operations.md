@@ -38,6 +38,14 @@ the index once any managed asset is staged or committed. Removing the manifest
 from the index does not reset adoption. Initial completely unstaged adoption with
 no managed assets in HEAD is reviewable before staging,
 but cannot establish a committed checkout or initial host discovery.
+Verification also reads canonical index blobs without changing the index. Staged
+provenance/config must be valid, configured documents must be indexed regular files,
+and managed hashes/AGENTS block must agree with staged provenance. Broken bytes,
+symlinks, gitlinks or unresolved merge stages fail even when working files are good.
+Valid project-owned policy edits may differ between staged and working snapshots.
+Review and correct the intended staged diff explicitly; verification never repairs
+or stages it. A coherent old schema-1 tracked snapshot can remain staged during an
+explicit update; commit the reviewed schema-3 result before host acceptance.
 
 ## Repeatable environment verification
 

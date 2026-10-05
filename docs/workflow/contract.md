@@ -20,6 +20,11 @@ its verified owned ignore block. Missing, modified, ignored or untracked install
 assets, provenance/config and AGENTS must remain indexed after staging/adoption;
 untracking the manifest cannot bypass verification. Initial completely unstaged
 adoption may be reviewed only when all required paths are trackable.
+The staged commit candidate is validated separately: provenance/config schemas,
+configured document paths, managed asset hashes and AGENTS block must agree in the
+index, with regular files and no merge stages. Good working-tree bytes cannot hide
+broken staged content. Valid project-owned policy edits may differ between the two
+snapshots; checks preserve both snapshots and never stage or repair them.
 Source authoring keeps the same canonical skills tracked; never install globally.
 
 ## Backlog batches and dependencies
