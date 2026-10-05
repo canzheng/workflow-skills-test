@@ -15,7 +15,7 @@ def source_bundle(source, revision):
     if not re.fullmatch(r'[0-9a-f]{40}', revision):
         raise Invalid('source revision must be a full 40-character commit SHA')
     source = repository(source)
-    resolved = git(source, 'rev-parse', '--verify', revision + '^{commit}').decode().strip()
+    resolved = git(source, '--no-replace-objects', 'rev-parse', '--verify', revision + '^{commit}').decode().strip()
     if resolved != revision:
         raise Invalid('source revision must identify the commit itself, not an annotated tag object')
     spec = load(safe(source, '.workflow/bundle.json'))
@@ -30,7 +30,7 @@ def source_bundle(source, revision):
         p = safe(source, name)
         if not p.is_file():
             raise Conflict('Missing source asset: ' + name)
-        data = git(source, 'show', revision + ':' + name)
+        data = git(source, '--no-replace-objects', 'show', revision + ':' + name)
         if p.read_bytes() != data:
             raise Conflict('Source bytes differ from pinned revision: ' + name)
         if name in assets:

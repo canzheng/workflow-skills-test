@@ -11,7 +11,7 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 Cloud and local environment setup use the source-owned fetch-and-run entrypoint in
 [workflow-skills README](https://github.com/canzheng/workflow-skills/blob/rewrite/workflow-skills-v2/README.md).
-Fetch source `ef24d36f47dbbcdbb204375b53db055122c28269` and run its
+Fetch source `b1fe9e0242753db54cc16dfc8768502eb74cb3ea` and run its
 `tools/workflow/environment-setup.sh` against
 this consumer Git root and `canzheng/workflow-skills-test`. No setup script is copied
 into this repository. Existing adoption retains its tracked manifest pin; setup
