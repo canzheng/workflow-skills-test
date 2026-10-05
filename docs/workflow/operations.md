@@ -52,6 +52,15 @@ to a concurrent_backup with concurrent_mode in recovery-index.json; inspect thes
 alongside original backups before retrying. This is best-effort recovery, not a
 multi-process lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
+Cleanup captures shared staging/removal names and newly created directories in
+exclusive mode-0700 private directories on the same filesystem before validating
+and discarding their actual identities. Mismatches are restored with no-replace;
+if a public path has been recreated, both entries are retained and the quarantine
+location is recorded in recovery-index.json. Empty unchanged private storage is
+removed after cleanup. In-place changes through an already-open captured descriptor
+still receive concurrent_backup recovery. This private transaction storage is not
+shared project policy and does not expand ignored dependency namespaces.
+
 Fresh ignored adoption rejects shared namespaces present in the Git index, including
 deleted working copies and indexed files at a namespace root, before preview/apply.
 An existing schema-4/5 update preflights dependency/index policy before any writes.
