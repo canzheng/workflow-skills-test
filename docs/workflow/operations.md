@@ -31,7 +31,11 @@ restores only unchanged installer writes on failure. Concurrent edits, deletions
 permission changes or symlink replacements are preserved and reported as recoverable
 residuals with original backups. Newly created directories are removed only when
 their inode/mode still match and they remain empty; changed directories are retained
-and reported with creation metadata in recovery-index.json. This is best-effort
+and reported with creation metadata in recovery-index.json. Staging files are created exclusively, with writes/permissions bound to the opened
+file descriptor. A symlink introduced at creation is rejected without writing its
+external target. Cleanup removes only unchanged installer staging files; changed
+bytes/modes/replacements or symlinks remain residuals with staging creation metadata.
+This is best-effort
 recovery, not a multi-process
 lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
@@ -128,3 +132,8 @@ Doctor is read-only; inaccessible host catalogs and unperformed remote capabilit
 remain unprobed. Record consumer/source SHAs, OS/runtime, initial catalog and actual
 skill use independently. A file/hash check, explicit file reading or green CI alone
 cannot establish automatic discovery, semantic review, merge or delivery.
+
+Doctor reports an unreadable/undecodable discovery file as a per-file warning and
+continues scanning other entries, including duplicate-name checks. It preserves
+the file; this filesystem scan does not prove native host discovery. Invalid UTF-8
+project text is a structured invalid-input error, not permission to rewrite it.

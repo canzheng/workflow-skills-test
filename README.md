@@ -11,9 +11,22 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 The three shared skill directories/references are ignored pinned dependencies.
 Project policy/config/helpers/CI/docs/project skills and schema-4 provenance are
-tracked in Git. Source pin: `7be9f1538b96d7dd98247e7e5eadffa042350496`. Source-authored skills remain tracked.
-[Setup instructions](https://github.com/canzheng/workflow-skills/blob/7be9f1538b96d7dd98247e7e5eadffa042350496/README.md)
-distinguish first adoption, explicit updates and repeatable bootstrap. Only shared
+tracked in Git. The exact source identity and revision are owned by the tracked
+[installation manifest](.workflow/install-manifest.json); source-authored skills
+remain tracked. Resolve the immutable setup instructions from that pin:
+
+```sh
+python3 - <<'PYCODE'
+import json
+from pathlib import Path
+pin = json.loads(Path('.workflow/install-manifest.json').read_text())
+print('Source pin:', pin['source_revision'])
+print('Setup instructions:', pin['source_url'].removesuffix('.git') +
+      '/blob/' + pin['source_revision'] + '/README.md')
+PYCODE
+```
+
+Those pinned instructions distinguish first adoption, explicit updates and repeatable bootstrap. Only shared
 workflow directories are ignored; pantry-project remains tracked. Setup never stages,
 commits or silently migrates a tracked installation.
 

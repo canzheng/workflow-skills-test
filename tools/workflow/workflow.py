@@ -54,7 +54,16 @@ def doctor(root, skill_roots=()):
             continue
         try:
             for p in folder.glob('*/SKILL.md'):
-                text = p.read_text()
+                try:
+                    text = p.read_text(encoding='utf-8')
+                except UnicodeError:
+                    findings.append(finding('discovery.invalid', p, 'Skill file is not valid UTF-8',
+                                            'Review the invalid skill in the actual host', 'warning'))
+                    continue
+                except OSError:
+                    findings.append(finding('discovery.inaccessible', p, 'Cannot read skill file',
+                                            'Inspect permissions in the actual host', 'warning'))
+                    continue
                 import re
                 match = re.search(r'^name:\s*(.+)$', text, re.M)
                 name = match.group(1).strip(' \"\'') if match else p.parent.name
@@ -165,7 +174,7 @@ def main(argv=None):
             findings, extra = inspect(repository(args.repo))
         if any(x['severity'] == 'error' for x in findings):
             code = 1
-    except Invalid as exc:
+    except (Invalid, UnicodeError) as exc:
         findings = [finding('invalid', getattr(args, 'repo', getattr(args, 'target', '')), str(exc), 'Correct invocation/configuration and retry')]
         code = 2
     except (Conflict, OSError) as exc:

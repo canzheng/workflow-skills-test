@@ -95,6 +95,7 @@ def transaction(root, changes, fail_after=None):
                           for i, name in enumerate(changes)}
         (stage / 'recovery-index.json').write_text(json.dumps(recovery_index, indent=2))
         applied = {}
+        staging_residuals = []
         try:
             for i, (name, data) in enumerate(changes.items()):
                 p = safe(root, name)
@@ -123,21 +124,54 @@ def transaction(root, changes, fail_after=None):
                     tmp = p.with_name(p.name + '.wf2-staged')
                     if tmp.exists() or tmp.is_symlink():
                         raise Conflict('Staging collision: ' + str(tmp))
+                    tmp_name = name + '.wf2-staged'
+                    tmp_state = None
                     try:
-                        shutil.copyfile(stage / str(i), tmp)
-                        if originals[name]:
-                            os.chmod(tmp, originals[name][1])
-                        installed = tmp.stat()
+                        # Exclusive creation rejects a symlink/file introduced
+                        # after preflight. Keep writes/chmod bound to that fd.
+                        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                                     getattr(os, 'O_NOFOLLOW', 0), 0o666)
+                        with os.fdopen(fd, 'wb') as output:
+                            installed = os.fstat(output.fileno())
+                            tmp_state = (b'', installed.st_mode, installed.st_dev, installed.st_ino)
+                            recovery_index[tmp_name] = {
+                                'kind': 'staging', 'backup': None, 'mode': None,
+                                'created_mode': installed.st_mode, 'created_device': installed.st_dev,
+                                'created_inode': installed.st_ino}
+                            if originals[name]:
+                                os.fchmod(output.fileno(), originals[name][1])
+                                installed = os.fstat(output.fileno())
+                                tmp_state = (b'', installed.st_mode, installed.st_dev, installed.st_ino)
+                            output.write(data)
+                            output.flush()
+                            installed = os.fstat(output.fileno())
+                            tmp_state = (data, installed.st_mode, installed.st_dev, installed.st_ino)
+                        staged_path = safe(root, tmp_name)
+                        metadata = staged_path.lstat()
+                        if not stat.S_ISREG(metadata.st_mode) or \
+                                (staged_path.read_bytes(), metadata.st_mode, metadata.st_dev, metadata.st_ino) != tmp_state:
+                            raise Conflict('Concurrent staging edit: ' + tmp_name)
                         os.replace(tmp, p)
                         # Capture our staged inode before replacement, rather than
                         # accepting another process's subsequent edit as ours.
                         applied[name] = (data, installed.st_mode, installed.st_dev, installed.st_ino)
                     finally:
-                        safe(root, name + '.wf2-staged').unlink(missing_ok=True)
+                        if tmp_state is not None:
+                            try:
+                                staged_path = safe(root, tmp_name)
+                                if staged_path.exists():
+                                    metadata = staged_path.lstat()
+                                    if not stat.S_ISREG(metadata.st_mode) or \
+                                            (staged_path.read_bytes(), metadata.st_mode, metadata.st_dev, metadata.st_ino) != tmp_state:
+                                        raise Conflict('Concurrent staging edit: ' + tmp_name)
+                                    staged_path.unlink()
+                            except (OSError, Invalid, Conflict) as cleanup_error:
+                                staging_residuals.append(tmp_name)
+                                raise Conflict('Staging cleanup residual: ' + tmp_name) from cleanup_error
                 if fail_after is not None and len(applied) == fail_after:
                     raise OSError('Injected apply failure')
         except Exception as exc:
-            residuals = []
+            residuals = list(staging_residuals)
             for name in reversed(applied):
                 try:
                     p = safe(root, name)
