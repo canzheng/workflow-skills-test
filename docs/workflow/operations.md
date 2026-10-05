@@ -39,9 +39,18 @@ and reported with creation metadata in recovery-index.json. Staging files are cr
 file descriptor. A symlink introduced at creation is rejected without writing its
 external target. Cleanup removes only unchanged installer staging files; changed
 bytes/modes/replacements or symlinks remain residuals with staging creation metadata.
-This is best-effort
-recovery, not a multi-process
-lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
+Replacement and rollback use Linux renameat2: existing entries are exchanged
+with staged files so the actual displaced bytes/mode/inode can be checked;
+absent destinations require atomic no-replace. Rollback stages originals instead
+of opening/truncating a live destination. Deletion first captures the actual entry
+under a reserved .wf2-removed name, validates it and restores a mismatched entry
+when the destination remains absent. Concurrent entries remain at their original
+path or are reported as recovery residuals. Unsupported atomic operations fail;
+there is no ordinary overwrite fallback. .wf2-staged, .wf2-restore and .wf2-removed
+collisions require manual review. A displaced inode edited during cleanup is copied
+to a concurrent_backup with concurrent_mode in recovery-index.json; inspect these
+alongside original backups before retrying. This is best-effort recovery, not a
+multi-process lock or an atomic multi-file transaction. Review residuals before retrying. Setup never stages/commits or changes repository administration.
 
 Fresh ignored adoption rejects shared namespaces present in the Git index, including
 deleted working copies and indexed files at a namespace root, before preview/apply.
