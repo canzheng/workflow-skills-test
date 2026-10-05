@@ -23,9 +23,7 @@ jobs:
           python3 - <<'PYCODE'
           import json, os, pathlib, re, subprocess, tempfile
           root = pathlib.Path.cwd()
-          if (root / '.workflow/bundle.json').is_file():
-              checker = root / 'tools/workflow/workflow.py'
-          else:
+          if (root / '.workflow/install-manifest.json').exists():
               pin = json.loads((root / '.workflow/install-manifest.json').read_text(encoding='utf-8'))
               revision, url = pin.get('source_revision'), pin.get('source_url')
               if not isinstance(revision, str) or not re.fullmatch(r'[0-9a-f]{40}', revision):
@@ -37,11 +35,18 @@ jobs:
               subprocess.run(['git', '-C', str(source), 'fetch', '--no-tags', '--depth=1', url, revision], check=True)
               subprocess.run(['git', '-C', str(source), 'checkout', '--detach', '--quiet', revision], check=True)
               checker = source / 'tools/workflow/workflow.py'
+              runtime = root / ('.agents/tools/workflow/workflow.py' if '.agents/tools/workflow/workflow.py' in pin['files'] else 'tools/workflow/workflow.py')
+          elif (root / '.workflow/bundle.json').is_file():
+              checker = root / 'tools/workflow/workflow.py'
+              runtime = checker
+          else:
+              raise SystemExit('Workflow provenance missing')
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
               print('WF2_CHECKER=' + str(checker), file=output)
+              print('WF2_RUNTIME=' + str(runtime), file=output)
           PYCODE
       - run: python3 "$WF2_CHECKER" bootstrap --repo . --apply --json
-      - run: python3 .agents/tools/workflow/workflow.py check --repo . --run-local --json > verification.json
+      - run: python3 "$WF2_RUNTIME" check --repo . --run-local --json > verification.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

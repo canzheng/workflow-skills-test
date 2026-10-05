@@ -168,3 +168,11 @@ Doctor reports an unreadable/undecodable discovery file as a per-file warning an
 continues scanning other entries, including duplicate-name checks. It preserves
 the file; this filesystem scan does not prove native host discovery. Invalid UTF-8
 project text is a structured invalid-input error, not permission to rewrite it.
+
+
+Schema-5 ignored dependencies require the runtime at `.agents/tools/workflow/`.
+Ignored setup from an old runtime-layout bundle fails before writes; existing
+schema-3/4 pins remain supported and tracked legacy setup stays explicit. CI
+selects consumer provenance before any unrelated `.workflow/bundle.json`, fetches
+that exact pin, and verification chooses the runtime recorded in its manifest.
+PR metadata makes the same selection from the trusted base checkout only.
