@@ -2,7 +2,7 @@
   "schema_version": 5,
   "skill_storage": "ignored",
   "bundle_version": "2.0.0",
-  "source_revision": "510fa9a550a4d0c4ee5d5c195d57b8d13bcd99a0",
+  "source_revision": "41df6a04ab04f436f5d5519bc7cc218c8fad6d17",
   "source_url": "https://github.com/canzheng/workflow-skills.git",
   "files": {
     ".agents/skills/workflow-deliver-issue/SKILL.md": "6ca436f267add702443941b45278c9e2cdf5d3800f6c01f9983ebb2830a96554",
@@ -16,15 +16,15 @@
     "docs/workflow/contract.md": "367dabe70d5a038d2604bd1abd7077ffdc95e032a3ea3ccd639157eaffe32373",
     "docs/workflow/README.md": "341054102aa0e672321c6433396cf9936f90d0062ad1b68adace9c6fd857cde3",
     "docs/workflow/development.md": "ff734346fe86c5a8cbf3b198c006536f82f97d3466efcb8e2c44df73c13dc0ba",
-    "docs/workflow/operations.md": "bde7574ad9ef5ae86b99ea52d443aee57dd679079cb20815b5f764b75e9a79fc",
+    "docs/workflow/operations.md": "219cba901d9405a6c3f9997a4a42cb77b90589387a80022aa689030687218e4c",
     ".github/workflows/workflow-v2-verify.yml": "188c0a8826e8d48347d5caeb18cd028d4d155c68de2dea3d9994b0c7e045150e",
     ".agents/tools/workflow/bootstrap.py": "541082a2881cfd254c65954206d4df9b4eea76918d55cea4de84c5a05868b980",
-    ".agents/tools/workflow/checks.py": "6c69c77d30b568d025d81b122ab6a9f9edb1083e98f4d4d55b7be331cb34ec2a",
+    ".agents/tools/workflow/checks.py": "72c7e16313c3dcfde59ef2c09a6c4e944a662b98009fcc2449e044f2a70539a0",
     ".agents/tools/workflow/core.py": "3a7f106e47b70acb696db67fc01a2ce951ef7d3f809f13c77e7d170996d5ebe9",
     ".agents/tools/workflow/migration.py": "2568f4d9f64c3c80472399bb908054960cd8c08035d6c8c68ad583c86ea9f295",
     ".agents/tools/workflow/records.py": "4d789260077b251575e1c3ee20de74aa9dbd65b38f7bdea5da4837b586881d51",
     ".agents/tools/workflow/setup.py": "7e2887ff6a29880112453606c8a0700f5b3a72535304ce2d5c64c339c54d74b5",
-    ".agents/tools/workflow/workflow.py": "0f8b1dd66ae1f9eefc1fa48f4e242839745c9e932cb62ef3c6e77fe9134a0b59"
+    ".agents/tools/workflow/workflow.py": "358a5326f886d6756cda70c7549cd17f31460cdf0122e87707cbc48da4e44053"
   },
   "agents_block_hash": "658fd345c07554d5927a4974b8e4d847e5c56a6d3c6f9fd31ff5fe7e2982e96f",
   "dependency_storage": "ignored",

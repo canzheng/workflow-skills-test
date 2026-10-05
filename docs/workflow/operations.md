@@ -217,6 +217,13 @@ Doctor reports a cyclic or inaccessible discovery root as a per-root warning,
 including resolution/stat/read failures or an existing nondirectory, and continues
 other catalogs and diagnostics. Missing optional catalogs remain silently absent.
 It preserves the inaccessible root and any symlinks; it does not repair global paths.
+Repository commands do not require a resolvable home directory. Doctor warns if
+home catalogs cannot be located and still inspects repository/explicit catalogs
+and tools. Only install-skills without --target resolves ~/.agents/skills; an
+unavailable default returns structured invalid-input JSON asking for --target.
+Check rejects enumerated Markdown symlinks before reading their content, including
+dangling/cyclic links. It reports the repository-relative path without disclosing
+external document text; regular repository documents still receive link diagnostics.
 Doctor reports an unreadable/undecodable discovery file as a per-file warning and
 continues scanning other entries, including duplicate-name checks. It preserves
 the file; this filesystem scan does not prove native host discovery. Invalid UTF-8
