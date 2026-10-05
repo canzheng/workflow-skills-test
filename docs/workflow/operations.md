@@ -176,3 +176,10 @@ schema-3/4 pins remain supported and tracked legacy setup stays explicit. CI
 selects consumer provenance before any unrelated `.workflow/bundle.json`, fetches
 that exact pin, and verification chooses the runtime recorded in its manifest.
 PR metadata makes the same selection from the trusted base checkout only.
+
+Existing parent and ancestor directory identities are recorded before apply and
+revalidated before writes and rollback. A missing deleted file is restored only
+through its unchanged parent chain; replaced, missing or symlinked parents remain
+recoverable residuals. Recovery records include expected parent directory devices
+and inodes beside original file bytes/modes. Permission changes on the same parent
+are preserved; created-directory cleanup retains its separate inode/mode checks.
