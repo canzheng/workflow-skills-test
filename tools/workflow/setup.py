@@ -165,7 +165,7 @@ def setup(args):
             if digest(current_ignore.encode()) != old['gitignore_block_hash']:
                 residuals.append('.gitignore managed block')
             elif not any(shared(name) for name in remaining):
-                changes['.gitignore'] = ignore_text.replace(current_ignore, '', 1).encode()
+                changes['.gitignore'] = ignore_text.replace(current_ignore + ('\n' if current_ignore + '\n' in ignore_text else ''), '', 1).encode()
         mpath = '.workflow/install-manifest.json'
         if residuals:
             updated = {**old, 'files': remaining}
@@ -177,8 +177,6 @@ def setup(args):
             raise Invalid('setup requires --source and --revision')
         version, assets = source_bundle(args.source, args.revision)
         url = source_url(getattr(args, 'source_url', SOURCE_URL))
-        if git(root, 'ls-files', '-z', '--', *['.agents/skills/' + s for s in SKILLS]):
-            raise Conflict('Shared workflow skills are tracked; review and untrack only the three canonical skill directories before dependency adoption')
         for name in shared_files(root):
             safe(root, name)
             if name not in assets and (not old or name not in old['files']):
@@ -197,7 +195,7 @@ def setup(args):
             for name, h in old['files'].items():
                 p = safe(root, name)
                 if shared(name) and old['schema_version'] == 2 and not p.exists():
-                    continue  # Fresh clones have not materialized ignored dependencies yet.
+                    continue  # Legacy ignored dependencies may be absent in fresh clones.
                 if not p.is_file() or digest(p.read_bytes()) != h:
                     raise Conflict('Modified/missing managed file: ' + name)
                 if name not in assets:
@@ -208,17 +206,17 @@ def setup(args):
                 raise Conflict('Unmanaged target collision: ' + name)
             if not p.exists() or p.read_bytes() != data:
                 changes[name] = data
-        entry = (START + '\nBootstrap the pinned shared skills before starting the agent:\n'
-                 'python3 tools/workflow/workflow.py bootstrap --repo . --apply --json\n'
-                 'Use workflow-skills v2 from .agents/skills/. Read\n'
+        entry = (START + '\nUse the committed workflow-skills v2 in .agents/skills/. Read\n'
                  'docs/workflow/contract.md and docs/workflow/README.md.\n'
+                 'Verify the tracked bundle with python3 tools/workflow/workflow.py check --repo .\n'
                  'Historical planning directories do not select v1. Never use obsolete\n'
                  'repository wrappers or global installation here. Preserve unrelated rules.\n' + END)
         new_text = text.replace(current, entry, 1) if current else text + ('\n' if text and not text.endswith('\n') else '') + entry + '\n'
         if new_text != text:
             changes['AGENTS.md'] = new_text.encode()
-        ignores = IGNORE_START + '\n' + '\n'.join('/.agents/skills/' + s + '/' for s in SKILLS) + '\n' + IGNORE_END
-        new_ignore = ignore_text.replace(current_ignore, ignores, 1) if current_ignore else ignore_text + ('\n' if ignore_text and not ignore_text.endswith('\n') else '') + ignores + '\n'
+        # Only the verified schema-2 owned block is removed on explicit update.
+        # Other root/nested/global ignores are preserved and checked for conflicts.
+        new_ignore = ignore_text.replace(current_ignore + ('\n' if current_ignore + '\n' in ignore_text else ''), '', 1) if current_ignore else ignore_text
         effective_ignore_policy(root, assets, proposed=new_ignore)
         if new_ignore != ignore_text:
             changes['.gitignore'] = new_ignore.encode()
@@ -229,9 +227,8 @@ def setup(args):
                      docs_index='docs/workflow/README.md', contract='docs/workflow/contract.md',
                      openspec='on-demand', verification={'local': [['python3', 'tools/workflow/workflow.py', 'check', '--repo', '.']], 'integration': []})
             changes['.workflow/config.json'] = (json.dumps(c, indent=2) + '\n').encode()
-        m = dict(schema_version=2, bundle_version=version, source_revision=args.revision, source_url=url,
-                 files={name: digest(data) for name, data in assets.items()}, agents_block_hash=digest(entry.encode()),
-                 gitignore_block_hash=digest(ignores.encode()))
+        m = dict(schema_version=3, skill_storage='tracked', bundle_version=version, source_revision=args.revision, source_url=url,
+                 files={name: digest(data) for name, data in assets.items()}, agents_block_hash=digest(entry.encode()))
         data = (json.dumps(m, indent=2) + '\n').encode()
         p = safe(root, '.workflow/install-manifest.json')
         if not p.exists() or p.read_bytes() != data:

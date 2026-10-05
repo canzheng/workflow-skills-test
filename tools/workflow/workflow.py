@@ -31,11 +31,11 @@ def doctor(root, skill_roots=()):
     if m:
         if not REQUIRED_ASSETS <= m['files'].keys():
             findings.append(finding('bundle.incomplete', '.workflow/install-manifest.json', 'Installed manifest omits required assets', 'Restore reviewed complete adoption'))
-        if m['schema_version'] == 2:
+        if m:
             try:
                 dependency_policy(root, m)
             except Conflict as exc:
-                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Restore reviewed scoped ignores/untrack only shared namespaces'))
+                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Review tracked adoption and remove conflicting ignore rules'))
         for name, h in m['files'].items():
             p = safe(root, name)
             if not p.is_file() or digest(p.read_bytes()) != h:
@@ -100,7 +100,7 @@ def main(argv=None):
     s.add_argument('--json', action='store_true')
     b = sub.add_parser('bootstrap')
     b.add_argument('--repo', required=True)
-    b.add_argument('--source', help='Optional explicit pinned source checkout for offline bootstrap')
+    b.add_argument('--source', help='Optional canonical pinned source checkout for read-only verification')
     b.add_argument('--apply', action='store_true')
     b.add_argument('--json', action='store_true')
     d = sub.add_parser('doctor')

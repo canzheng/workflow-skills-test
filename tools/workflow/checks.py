@@ -117,11 +117,11 @@ def check(root, args):
     if m:
         if not REQUIRED_ASSETS <= m['files'].keys():
             findings.append(finding('bundle.incomplete', '.workflow/install-manifest.json', 'Installed manifest omits required assets', 'Restore reviewed complete adoption; do not hide missing files in provenance'))
-        if m['schema_version'] == 2:
+        if m:
             try:
                 dependency_policy(root, m)
             except Conflict as exc:
-                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Restore reviewed dependency policy; bootstrap before verification'))
+                findings.append(finding('dependency.policy', '.gitignore', str(exc), 'Review and commit complete tracked adoption; remove conflicting ignores'))
         for name, h in m['files'].items():
             p = safe(root, name)
             if not p.is_file() or digest(p.read_bytes()) != h:

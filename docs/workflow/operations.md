@@ -1,92 +1,71 @@
 # Workflow operations
 
-Use a pinned workflow-skills source checkout and its setup command with explicit
-source, full revision, target and repository. Dry-run first, `--apply` performs
-installation/update. Modified managed files conflict; configuration is user-owned.
-Doctor is read-only: `python3 tools/workflow/workflow.py doctor --repo . --json`.
-Uninstall: `python3 tools/workflow/workflow.py setup --target . --uninstall --apply`.
-Only unmodified files/block are removed; modified residuals and config remain.
-Partial apply restores originals or identifies recoverable residuals. Never use
-missing-target fallback or silently overwrite human modifications.
+## Adoption and updates
 
-## Pinned shared-skill bootstrap
+Use an explicit workflow-skills checkout, full commit SHA and target Git root.
+Preview `setup --source /pinned/source --revision FULL_SHA --target . --repository owner/repo`;
+`--apply` performs the bounded adoption/update. The source-owned environment entrypoint
+can adopt a fresh repository without existing tools or a first commit. See the source
+README for its exact pinned fetch-and-run command. It is not copied into the consumer.
 
-One-time adoption writes project-owned config, utilities, CI/templates, the managed
-AGENTS block and a tracked schema-2 `.workflow/install-manifest.json`. That manifest
-is the dependency pin: full source SHA, credential-free HTTPS GitHub source URL and
-asset hashes. Shared skills remain tracked in the workflow-skills source repository;
-consumers materialize them locally and ignore exactly these directories:
+Setup installs all three shared skills and risk references as commit-ready files in
+`.agents/skills/`, alongside utilities, policy/config, CI/templates and docs. Review
+and commit these files and `.workflow/install-manifest.json`. Schema 3 records
+`skill_storage: tracked`, source URL/full SHA, bundle version and managed hashes;
+this is provenance, not task state. Shared and project-specific skills must be
+trackable. No shared-skill ignore entries are added. Setup never stages or commits.
 
-```gitignore
-/.agents/skills/workflow-design-to-backlog/
-/.agents/skills/workflow-deliver-issue/
-/.agents/skills/workflow-risk-review/
-```
+Repeated identical setup is a no-op. Explicit updates require unmodified managed
+bytes/instruction blocks, verify canonical source objects and change the source pin
+only in the reviewed diff. Configuration remains project-owned. Modified files,
+unmanaged collisions, symlinks and unsafe targets fail before writes. Failed apply
+restores originals or reports recoverable residuals. No main/latest/global fallback.
 
-Project-specific skills stay trackable. Setup adds/owns this delimited ignore block,
-preserving other rules, and materializes the dependency initially. Repeating setup
-with the same inputs returns no changes. It does not silently configure GitHub
-administration or edit the Git index. Fork adoption may explicitly supply
-`--source-url https://github.com/OWNER/REPO.git`; the default source is
-`https://github.com/canzheng/workflow-skills.git`.
+## Migrate an ignored-skill adoption
 
-For an existing adoption with tracked shared skills, review their managed hashes and
-any human changes first, then explicitly untrack only these paths, preserving bytes:
+Use the new source's setup dry-run/apply, not the old installed helper. For schema 2,
+setup verifies the old owned ignore-block hash and removes only that block, preserving
+other rules, project skills/config and the index. Missing ignored assets may be
+installed during this explicit update; modified assets or ignore blocks conflict.
+Broader/nested/global/info excludes that still hide any shared/project skills also
+conflict before writes. Resolve those rules deliberately; never force-add around them.
+Schema-1 tracked adopters can update without untracking their skills.
 
-```sh
-git rm --cached -r -- .agents/skills/workflow-design-to-backlog .agents/skills/workflow-deliver-issue .agents/skills/workflow-risk-review
-```
+Review the migration, stage the three shared directories and all owned adoption
+changes, then commit. Startup/check/doctor cannot certify an indexed manifest with
+untracked shared assets. Initial unstaged adoption is reviewable before staging,
+but cannot establish a committed checkout or initial host discovery.
 
-Run the new pinned setup dry-run/apply and commit the reviewed migration. An ignore
-rule alone cannot untrack files. Setup refuses tracked shared skills, unmanaged
-collisions and modified managed bytes rather than silently discarding them.
+## Repeatable environment verification
 
-Repeatable Cloud/Ubuntu environment preparation, from the consumer root:
+An adopted consumer carries its skills in Git. A fresh clone must contain them before
+an agent starts; environment setup does not inject them. From the consumer root:
 
 ```sh
-python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
 python3 tools/workflow/workflow.py check --repo . --run-local --json
 python3 tools/workflow/workflow.py doctor --repo . --json
+git --no-optional-locks status --short --untracked-files=all
 ```
 
-Bootstrap reads the tracked dependency pin. A source-owned environment entrypoint
-may itself be fetched at an explicit full SHA; that seed never overrides an existing
-consumer pin. See the workflow-skills README for the Cloud install-script/local
-fetch-and-run command; no setup script needs to be tracked in the target repository.
-If files already match it, rerunning needs no network and returns `changes: []`.
-Otherwise Python >=3.10, Git and Git HTTPS read access to the pinned source are
-required. It fetches the full commit into a temporary checkout, verifies source and
-skill hashes, then materializes only those ignored namespaces. `--source /exact/pinned/checkout`
-provides an explicit offline source; omitting `--apply` previews missing assets.
-It never changes config, docs, policy, pin or index. Modified/extra/symlinked shared
-assets, missing ignore policy, source/hash mismatch and denied fetch fail safely;
-resolve the reported conflict deliberately before retrying. Downloaded source code
-is not executed. Only explicit setup/update changes the pin; bootstrap never upgrades.
+These commands need no workflow-source fetch. Existing `bootstrap --apply` callers
+are supported as read-only verification of schema-3 shared assets; it never downloads,
+repairs, updates the pin or changes the index. Optional `--source /pinned/source`
+compares canonical source bytes offline. Missing/modified/extra/symlinked/untracked
+assets fail: restore the reviewed Git checkout or perform an explicit setup/update.
+Old schema-1/2 adoptions require reviewed setup before using new startup verification.
+The source-owned environment entrypoint also rejects missing config/wrong identity
+before writes and retains the installed pin on repeat, even with a newer entrypoint.
 
-Configure the host's preparation/maintenance hook to run these commands after the
-consumer checkout and before agent skill discovery. Publishing a setup script or
-running it from an already-started agent does not prove fresh host discovery. Recheck
-after branch/pin changes and record consumer/source SHAs and the actual tested host
-profile. Uninstall removes the owned ignore block only when unchanged and no modified
-shared asset remains; retained modifications remain ignored and reported as residuals.
+Require exit0/ok:true; do not equate this with application acceptance or host discovery.
+The default config checks workflow integrity only. Add actual application commands
+when code exists. Consumer CI checks the committed skills directly after checkout,
+then runs declared local commands and mechanical checks. No bootstrap fetch is needed.
 
-Effective Git ignore policy is checked before adoption/update writes and during
-bootstrap/check/doctor, including nested/global/info excludes. Broad project-skill
-ignores or negations exposing shared dependencies conflict even with an unchanged
-managed block. Narrow the offending rule deliberately; unrelated rules are preserved.
+For Cloud/Ubuntu, confirm selected branch/SHA, committed manifest/skill bytes and
+actual initial host catalog. A skill's disk presence, explicit file read or a green
+CI job does not prove automatic discovery. Capture configured host cwd/project root
+separately from shell cwd; do not move skills outside the repo or install globally.
 
-Missing installed runtime modules fail bundle preflight. Extra ignored shared assets
-also mark dependency identity dirty, even when ordinary Git status is clean.
-
-Dropping an installed runtime/CI/skill file and its manifest entry still fails complete
-adoption checks. Partial uninstall residual provenance is recovery evidence, not a pass.
-
-Required docs, Issue/PR templates and risk references also participate in completeness.
-Before a first Git commit, doctor reports revision:null/dirty:true with actual content
-digest; commit reviewed adoption files and rerun to establish exact-commit evidence.
-
-Environment setup validates the explicit owner/repository against any existing
-project config before adoption or bootstrap, rejecting mismatches without writes.
-
-An adopted repository missing its project configuration fails before dependency writes.
-Source and installed provenance share the same v2 bundle-version validation.
+Uninstall removes only unmodified managed assets/instruction blocks and retains
+modified residuals and project config. It never changes the index or repository
+administration. Doctor reports absent optional tools and unprobed capabilities honestly.
