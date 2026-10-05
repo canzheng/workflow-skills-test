@@ -2,7 +2,7 @@
   "schema_version": 4,
   "skill_storage": "ignored",
   "bundle_version": "2.0.0",
-  "source_revision": "b5b8da40eef689852bdc3d7dfd644eeca4e878e8",
+  "source_revision": "d1de33ac3c6e889ea0c189ec53b000fe0bfddecc",
   "source_url": "https://github.com/canzheng/workflow-skills.git",
   "files": {
     ".agents/skills/workflow-deliver-issue/SKILL.md": "6ca436f267add702443941b45278c9e2cdf5d3800f6c01f9983ebb2830a96554",
@@ -23,7 +23,7 @@
     "tools/workflow/core.py": "1eb0e0ad6d3eac4021fb7e6916fbfa07e65a7d0b8ed5934179eea42853834d4d",
     "tools/workflow/migration.py": "2568f4d9f64c3c80472399bb908054960cd8c08035d6c8c68ad583c86ea9f295",
     "tools/workflow/records.py": "02771f8b7bd49a61acc831e8b4071561fe4a8ab7e4fcf0651b1463f05fe220ad",
-    "tools/workflow/setup.py": "ff16794a2a4bb93a25df61c4b4f2e4d377ee295ed0537888e742c43eec9567ee",
+    "tools/workflow/setup.py": "808502b977c863b313c952fe5a6ebeff7742573e047443f6e6d724860c50868a",
     "tools/workflow/workflow.py": "8d4d606cc41c313e0dd9e7df3b0872916855eeda35bb0f84ccf38b7e1b5873a0"
   },
   "agents_block_hash": "4bb5fcb66fff932d320b60f9a984c3131e5e3ccde28e220a597e77a10780fd44",

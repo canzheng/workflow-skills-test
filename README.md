@@ -11,8 +11,8 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 The three shared skill directories/references are ignored pinned dependencies.
 Project policy/config/helpers/CI/docs/project skills and schema-4 provenance are
-tracked in Git. Source pin: `b5b8da40eef689852bdc3d7dfd644eeca4e878e8`. Source-authored skills remain tracked.
-[Setup instructions](https://github.com/canzheng/workflow-skills/blob/b5b8da40eef689852bdc3d7dfd644eeca4e878e8/README.md)
+tracked in Git. Source pin: `d1de33ac3c6e889ea0c189ec53b000fe0bfddecc`. Source-authored skills remain tracked.
+[Setup instructions](https://github.com/canzheng/workflow-skills/blob/d1de33ac3c6e889ea0c189ec53b000fe0bfddecc/README.md)
 distinguish first adoption, explicit updates and repeatable bootstrap. Only shared
 workflow directories are ignored; pantry-project remains tracked. Setup never stages,
 commits or silently migrates a tracked installation.
@@ -38,7 +38,7 @@ Cloud environment/discovery investigation is deferred by user approval. Optional
 explicit shared-skills-only global install is source-owned; it is never performed
 implicitly here. Test global and repo-local discovery separately to avoid duplicates.
 See [operations](docs/workflow/operations.md) for migration/conflicts and the
-[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/b5b8da40eef689852bdc3d7dfd644eeca4e878e8/docs/validation/ubuntu-workstation-session.md).
+[original Ubuntu workstation evidence](https://github.com/canzheng/workflow-skills/blob/d1de33ac3c6e889ea0c189ec53b000fe0bfddecc/docs/validation/ubuntu-workstation-session.md).
 No merge, completed Issue closure, administration or global changes occur here.
 
 The original workstation session verified startup discovery and actual v2 use at

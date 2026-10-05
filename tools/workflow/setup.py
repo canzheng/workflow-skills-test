@@ -23,6 +23,8 @@ def source_bundle(source, revision):
     if not isinstance(spec, dict) or type(spec.get('schema_version')) is not int or spec.get('schema_version') != 1 or not valid_bundle_version(spec.get('bundle_version')) or not isinstance(spec.get('assets'), dict):
         raise Invalid('Unsupported source bundle schema')
     assets = spec['assets']
+    if any(not isinstance(dest, str) for dest in assets.values()):
+        raise Invalid('Source asset destinations must be repository-relative strings')
     if not REQUIRED_ASSETS <= set(assets.values()):
         raise Conflict('Incomplete production bundle: required consumer assets omitted: ' + ', '.join(sorted(REQUIRED_ASSETS - set(assets.values()))))
     paths = {'.workflow/bundle.json', *assets.keys()}
