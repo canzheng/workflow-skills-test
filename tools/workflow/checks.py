@@ -38,7 +38,12 @@ def links(root, text, origin, reader=None):
         # Optional Markdown title; spaces in paths should use angle brackets.
         if ' "' in target:
             target = target.split(' "', 1)[0]
-        parsed = urlsplit(target)
+        try:
+            parsed = urlsplit(target)
+        except ValueError:
+            findings.append(finding('links.url', origin, 'Malformed Markdown URL: ' + target,
+                                    'Correct the malformed URL'))
+            continue
         if parsed.scheme or parsed.netloc:
             continue
         path = unquote(parsed.path)

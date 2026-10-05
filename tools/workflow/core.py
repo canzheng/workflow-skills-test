@@ -52,9 +52,20 @@ def git(root, *args):
     return p.stdout
 
 
+def native_text(value):
+    """Reject strings the OS cannot use before any filesystem/process action."""
+    if '\0' in value:
+        raise Invalid('NUL is not valid in a native path or argument')
+    try:
+        os.fsencode(value)
+    except UnicodeError as exc:
+        raise Invalid('Native path or argument cannot be encoded for this platform') from exc
+
+
 def relative(value):
-    if not isinstance(value, str) or not value or '\\' in value or '\0' in value:
-        raise Invalid('Expected a nonempty repository-relative POSIX path without NULs')
+    if not isinstance(value, str) or not value or '\\' in value:
+        raise Invalid('Expected a nonempty repository-relative POSIX path')
+    native_text(value)
     p = pathlib.PurePosixPath(value)
     if p.is_absolute() or any(x in ('..', '.', '') for x in value.split('/')) or value.startswith('.git/') or value == '.git':
         raise Invalid('Unsafe repository-relative path: ' + value)
@@ -117,6 +128,8 @@ def validate_config(root, c):
         for cmd in commands:
             if not isinstance(cmd, list) or not cmd or any(not isinstance(x, str) or not x for x in cmd):
                 raise Invalid('Each verification command must be a nonempty argv array')
+            for argument in cmd:
+                native_text(argument)
     if not v['local']:
         raise Invalid('At least one local verification command is required')
     return c
