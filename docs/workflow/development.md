@@ -1,7 +1,7 @@
 # Workflow development
 
 Python >=3.10 and Git run the installed utilities without Conda or global skills.
-Run `python3 tools/workflow/workflow.py check --repo .` for bundle/config/link
+Run `python3 .agents/tools/workflow/workflow.py check --repo .` for bundle/config/link
 checks, and the application verification commands declared in .workflow/config.json.
 The generated default checks only the workflow bundle; add real application test
 commands before accepting application delivery. Arguments are arrays, never shell
@@ -28,14 +28,16 @@ are preserved on update/uninstall. No closure/phase bot is installed.
 
 ## Ubuntu preparation
 
-Commit project policy/config/helpers/CI/docs/project skills and schema-4 provenance.
-The three shared directories/references are ignored, not committed. Bootstrap their
+Commit project policy/config/CI/docs/project skills and schema-5 provenance.
+The three shared skill directories/references and .agents/tools/workflow runtime
+are ignored, not committed. Fresh clones fetch the manifest pin and run its
+source-owned environment-setup.sh before using the installed CLI. Bootstrap their
 exact source pin before starting Codex from the repository root:
 
 ```sh
-python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
-python3 tools/workflow/workflow.py check --repo . --run-local --json
-python3 tools/workflow/workflow.py doctor --repo . --json
+python3 .agents/tools/workflow/workflow.py bootstrap --repo . --apply --json
+python3 .agents/tools/workflow/workflow.py check --repo . --run-local --json
+python3 .agents/tools/workflow/workflow.py doctor --repo . --json
 ```
 
 Fresh clones require source read access for missing dependency bytes; complete reruns

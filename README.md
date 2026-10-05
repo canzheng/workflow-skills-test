@@ -9,9 +9,9 @@ is repository-local; read [its contract](docs/workflow/contract.md) and
 Initial setup/CI proves workflow integrity; application verification is added with
 the ingredient-catalog implementation PR. No global skill install or Conda needed.
 
-The three shared skill directories/references are ignored pinned dependencies.
-Project policy/config/helpers/CI/docs/project skills and schema-4 provenance are
-tracked in Git. The exact source identity and revision are owned by the tracked
+The three shared skill directories/references and Python helpers in
+`.agents/tools/workflow/` are ignored dependencies from one exact pin.
+Project policy/config/CI/docs/project skills and schema-5 provenance are tracked in Git. The exact source identity and revision are owned by the tracked
 [installation manifest](.workflow/install-manifest.json); source-authored skills
 remain tracked. Resolve the immutable setup instructions from that pin:
 
@@ -33,14 +33,16 @@ commits or silently migrates a tracked installation.
 For Ubuntu, bootstrap before starting Codex from this repository root:
 
 ```sh
-python3 tools/workflow/workflow.py bootstrap --repo . --apply --json
-python3 tools/workflow/workflow.py check --repo . --run-local --json
-python3 tools/workflow/workflow.py doctor --repo . --json
+python3 .agents/tools/workflow/workflow.py bootstrap --repo . --apply --json
+python3 .agents/tools/workflow/workflow.py check --repo . --run-local --json
+python3 .agents/tools/workflow/workflow.py doctor --repo . --json
 git --no-optional-locks status --short --untracked-files=all
 codex
 ```
 
-Bootstrap materializes only missing ignored skills from the exact pin; complete
+A fresh clone initially has no consumer CLI. Fetch the manifest's exact source
+revision and run its source-owned setup entrypoint before these commands.
+Bootstrap materializes only missing ignored skill/runtime files from the exact pin; complete
 matching reruns are offline/no-op, preserving project files/pin/index. Modified,
 extra or symlinked dependency bytes conflict without overwrite or latest fallback.
 Python >=3.10 and Git are required. This workflow-only branch has no application

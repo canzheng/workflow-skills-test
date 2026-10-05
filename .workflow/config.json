@@ -9,7 +9,7 @@
     "local": [
       [
         "python3",
-        "tools/workflow/workflow.py",
+        ".agents/tools/workflow/workflow.py",
         "check",
         "--repo",
         "."

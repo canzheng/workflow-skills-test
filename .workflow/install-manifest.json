@@ -1,8 +1,8 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "skill_storage": "ignored",
   "bundle_version": "2.0.0",
-  "source_revision": "9af59a503bc9d51f1570bb0d3c9385eaba7f528d",
+  "source_revision": "ffe656fe8247ce96805fbf095fba8108c1253774",
   "source_url": "https://github.com/canzheng/workflow-skills.git",
   "files": {
     ".agents/skills/workflow-deliver-issue/SKILL.md": "6ca436f267add702443941b45278c9e2cdf5d3800f6c01f9983ebb2830a96554",
@@ -12,20 +12,21 @@
     ".github/ISSUE_TEMPLATE/bug.yml": "01256c425f70d681cd1575be3a03d9112cd29d7a6b54a07b385262f89dfbc4fc",
     ".github/ISSUE_TEMPLATE/feature.yml": "2e4e0d764d0838093fc6cfedb266926fb5acff1eed9bb542eeb4768641d6abef",
     ".github/pull_request_template.md": "a4cee1bac8bc479862e3d1682f4d6c9e9860e79901cb25d54ce86acbfe0db752",
-    ".github/workflows/workflow-v2-pr-metadata.yml": "202c6e97d6f19ea4570c01344e6146067b216fd28ebda8c4ee6f2facc0496e5d",
-    "docs/workflow/contract.md": "f383ffb59decb53918137cbe302cb553241b89c058dcefbc1df5d67dfdafc2f7",
-    "docs/workflow/README.md": "d1fbee50e68747e38a2c9900715d3c16de1032251acce6b37639586ce32c22fc",
-    "docs/workflow/development.md": "d92dc94e6304435e9662b053c2d36757be94b94c06c746e6c28ee89a1a98f180",
-    "docs/workflow/operations.md": "0c61f282a0806346071b48cec4fe38187a44e1bf8d06603fb7f034d3c1534d66",
-    ".github/workflows/workflow-v2-verify.yml": "73eca265c928baebd3af99d008ca3744a76504996b880090cf2c8a768561deed",
-    "tools/workflow/bootstrap.py": "01c2c9193b1c528cbaedd1425c016dd370acd450fa3c14f99921d87dafa77074",
-    "tools/workflow/checks.py": "a084f64a943f7ef6b1859c6de74c63b3590731fe125c9fa772de6caa0484b527",
-    "tools/workflow/core.py": "43d0f8c2d9c5b0950211dbb30257e0ec3957e77a208adb5bec5d3b0b19935f1b",
-    "tools/workflow/migration.py": "2568f4d9f64c3c80472399bb908054960cd8c08035d6c8c68ad583c86ea9f295",
-    "tools/workflow/records.py": "02771f8b7bd49a61acc831e8b4071561fe4a8ab7e4fcf0651b1463f05fe220ad",
-    "tools/workflow/setup.py": "11bce2e74b5d3f310ce95cf7cf1fa91b563d5db6171df642dacfaf83c5ce8c4c",
-    "tools/workflow/workflow.py": "379e99c215166d1bcb46f0d3219a2f1215a9db86ef5e55a29b4f12f877103a00"
+    ".github/workflows/workflow-v2-pr-metadata.yml": "1e1a8346a5079df72a1dc4b5933f4d35091526c87a0a7cacf53544e5690b488f",
+    "docs/workflow/contract.md": "367dabe70d5a038d2604bd1abd7077ffdc95e032a3ea3ccd639157eaffe32373",
+    "docs/workflow/README.md": "341054102aa0e672321c6433396cf9936f90d0062ad1b68adace9c6fd857cde3",
+    "docs/workflow/development.md": "f29e938d877036a16e6de6cb2661e6a6277989a9b39e904dc4b17ade1b5d7612",
+    "docs/workflow/operations.md": "1fb0175e19cbb08854314548b230bd6224894a5896edf28682bf48115874486a",
+    ".github/workflows/workflow-v2-verify.yml": "5c87feb50d9192f8abf77bf967dc1891248a07c9791d48a8bde54506a77b1a06",
+    ".agents/tools/workflow/bootstrap.py": "541082a2881cfd254c65954206d4df9b4eea76918d55cea4de84c5a05868b980",
+    ".agents/tools/workflow/checks.py": "43cd344a95beb9b05800e52a2868a6d1d3bbce84b70f6d2c0e940eabe63fe332",
+    ".agents/tools/workflow/core.py": "460de02f83277ea8a3e399398bbc83e2b60052f9c84dbb70e01bdfc7d872949d",
+    ".agents/tools/workflow/migration.py": "2568f4d9f64c3c80472399bb908054960cd8c08035d6c8c68ad583c86ea9f295",
+    ".agents/tools/workflow/records.py": "02771f8b7bd49a61acc831e8b4071561fe4a8ab7e4fcf0651b1463f05fe220ad",
+    ".agents/tools/workflow/setup.py": "dd368cfd75cc3bfae4a733c266f0f96c36c0e8d14cae1b8eab3de2e1a60da279",
+    ".agents/tools/workflow/workflow.py": "7500f5fa1129f9ff14955378876bb3367529a92ed4aa79ee1673998bd62e7aa7"
   },
-  "agents_block_hash": "4bb5fcb66fff932d320b60f9a984c3131e5e3ccde28e220a597e77a10780fd44",
-  "gitignore_block_hash": "77031b630e9046903acb04d571c56696388c0429ede3c89fa1f8ead5f5522ead"
+  "agents_block_hash": "658fd345c07554d5927a4974b8e4d847e5c56a6d3c6f9fd31ff5fe7e2982e96f",
+  "dependency_storage": "ignored",
+  "gitignore_block_hash": "fbfa27e2b542ce1c460db14d7898e832288e9e4da6fd4cc341acdfacfe85d8a6"
 }
