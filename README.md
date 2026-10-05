@@ -11,8 +11,8 @@ the ingredient-catalog implementation PR. No global skill install or Conda neede
 
 The shared skills and risk references are committed with schema-3 provenance in
 `.workflow/install-manifest.json`, pinning source
-`5615fc3f488edc41079dd60085440f0f265146f9`. Initial adoption or explicit update uses
-that pinned source's [setup procedure](https://github.com/canzheng/workflow-skills/blob/5615fc3f488edc41079dd60085440f0f265146f9/README.md).
+`aceba7143652ba127dbc62c98608e1b9943be31d`. Initial adoption or explicit update uses
+that pinned source's [setup procedure](https://github.com/canzheng/workflow-skills/blob/aceba7143652ba127dbc62c98608e1b9943be31d/README.md).
 Review and commit generated skill/project files; setup never stages or commits.
 Shared skills and pantry-project remain tracked and are not ignored. No source-owned
 setup entrypoint is copied here.

@@ -16,7 +16,10 @@ Cloud/Ubuntu checkouts supply skills before agent startup; repeat setup verifies
 that checkout without injecting missing skills, rewriting project files or changing
 the index. Initial filesystem adoption is reviewable but needs a commit before host
 acceptance. Explicit setup/update migrates old ignored dependencies by removing only
-its verified owned ignore block. Missing or modified tracked assets are errors.
+its verified owned ignore block. Missing, modified, ignored or untracked installed assets are errors. All manifest
+assets, provenance/config and AGENTS must remain indexed after staging/adoption;
+untracking the manifest cannot bypass verification. Initial completely unstaged
+adoption may be reviewed only when all required paths are trackable.
 Source authoring keeps the same canonical skills tracked; never install globally.
 
 ## Backlog batches and dependencies

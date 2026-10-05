@@ -27,13 +27,16 @@ Use the new source's setup dry-run/apply, not the old installed helper. For sche
 setup verifies the old owned ignore-block hash and removes only that block, preserving
 other rules, project skills/config and the index. Missing ignored assets may be
 installed during this explicit update; modified assets or ignore blocks conflict.
-Broader/nested/global/info excludes that still hide any shared/project skills also
+Broader/nested/global/info excludes that hide any installed asset, provenance,
+policy or project skill also
 conflict before writes. Resolve those rules deliberately; never force-add around them.
 Schema-1 tracked adopters can update without untracking their skills.
 
 Review the migration, stage the three shared directories and all owned adoption
-changes, then commit. Startup/check/doctor cannot certify an indexed manifest with
-untracked shared assets. Initial unstaged adoption is reviewable before staging,
+changes, then commit. Startup/check/doctor require every manifest asset, provenance/config and AGENTS in
+the index once any managed asset is staged or committed. Removing the manifest
+from the index does not reset adoption. Initial completely unstaged adoption with
+no managed assets in HEAD is reviewable before staging,
 but cannot establish a committed checkout or initial host discovery.
 
 ## Repeatable environment verification

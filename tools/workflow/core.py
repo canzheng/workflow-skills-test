@@ -11,6 +11,7 @@ END = '<!-- workflow-v2:end -->'
 IGNORE_START = '# workflow-v2-dependency:start'
 IGNORE_END = '# workflow-v2-dependency:end'
 SOURCE_URL = 'https://github.com/canzheng/workflow-skills.git'
+PROJECT_FILES = frozenset(('AGENTS.md', '.workflow/config.json', '.workflow/install-manifest.json'))
 SKILLS = ('workflow-design-to-backlog', 'workflow-deliver-issue', 'workflow-risk-review')
 CI_ASSETS = ('.github/workflows/workflow-v2-verify.yml',
              '.github/workflows/workflow-v2-pr-metadata.yml')
@@ -166,11 +167,15 @@ def dependency_policy(root, m):
             raise Conflict('Unmanaged shared dependency asset: ' + name)
     effective_ignore_policy(root, m['files'])
     tracked = set(git(root, 'ls-files', '-z').decode().split('\0')) - {''}
-    required = {name for name in m['files'] if shared(name)}
-    # Initial filesystem adoption is reviewable before staging. Once provenance is
-    # in Git, every shared asset must also be in Git; no force-add workaround.
-    if '.workflow/install-manifest.json' in tracked and required - tracked:
-        raise Conflict('Shared workflow skill is not tracked: ' + sorted(required - tracked)[0] +
+    committed = (set(git(root, 'ls-tree', '-r', '--name-only', '-z', 'HEAD').decode().split('\0')) - {''}
+                 if head_revision(root) else set())
+    required = set(m['files']) | PROJECT_FILES
+    # A completely unstaged initial adoption is reviewable. Indexed/committed
+    # managed assets identify adoption even when provenance was removed from the
+    # index. Existing project-owned AGENTS/config alone are not that sentinel.
+    adoption = set(m['files']) | {'.workflow/install-manifest.json'}
+    if adoption & (tracked | committed) and required - tracked:
+        raise Conflict('Workflow installation path is not tracked: ' + sorted(required - tracked)[0] +
                        '; review and commit the complete adoption')
 
 
@@ -187,7 +192,7 @@ def effective_ignore_policy(root, names, proposed=None):
             projects.add(name)
         elif p.is_dir():
             projects.add(name + '/workflow-project-trackability-probe.md')
-    required = {name for name in names if shared(name)}
+    required = set(names) | PROJECT_FILES
     candidates = sorted(required | projects)
 
     def inspect(worktree):
@@ -207,7 +212,7 @@ def effective_ignore_policy(root, names, proposed=None):
             raise Invalid('Cannot inspect effective shared/project skill ignore policy')
         ignored = set(result.stdout.decode().split('\0')) - {''}
         if required & ignored:
-            raise Conflict('Shared workflow skill path is ignored; remove the conflicting rule: ' + sorted(required & ignored)[0])
+            raise Conflict('Workflow installation path is ignored; remove the conflicting rule: ' + sorted(required & ignored)[0])
         if projects & ignored:
             raise Conflict('Project-specific skill path is ignored; narrow project ignore policy: ' + sorted(projects & ignored)[0])
 
@@ -226,6 +231,15 @@ def effective_ignore_policy(root, names, proposed=None):
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_bytes(p.read_bytes())
             for name in candidates:
+                for parent in pathlib.PurePosixPath(name).parents:
+                    if str(parent) == '.':
+                        continue
+                    ignore_name = (parent / '.gitignore').as_posix()
+                    p = safe(root, ignore_name)
+                    if p.is_file():
+                        dest = preview / ignore_name
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        dest.write_bytes(p.read_bytes())
                 (preview / name).parent.mkdir(parents=True, exist_ok=True)
             inspect(preview)
 
@@ -269,6 +283,20 @@ def manifest(root):
     return m
 
 
+def head_revision(root):
+    """Resolve a real commit or a verified unborn branch without inventing history."""
+    resolved = subprocess.run(['git', '-C', str(root), 'rev-parse', '--verify', '--quiet', 'HEAD^{commit}'], capture_output=True, check=False)
+    if resolved.returncode == 0:
+        revision = resolved.stdout.decode().strip()
+    else:
+        ref = git(root, 'symbolic-ref', '--quiet', 'HEAD').decode().strip()
+        exists = subprocess.run(['git', '-C', str(root), 'show-ref', '--verify', '--quiet', ref], capture_output=True, check=False)
+        if not ref.startswith('refs/heads/') or exists.returncode != 1:
+            raise Invalid('Cannot resolve repository commit; inspect Git integrity')
+        revision = None  # An unborn branch has content, but no tested commit to invent.
+    return revision
+
+
 def content_identity(root):
     """Bind diagnostics/evidence to actual tracked and nonignored untracked bytes."""
     names = set(git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').decode().split('\0')) - {''}
@@ -297,15 +325,7 @@ def content_identity(root):
         else:
             data = b'non-file'
         h.update(name.encode() + b'\0' + digest(data).encode() + b'\0')
-    resolved = subprocess.run(['git', '-C', str(root), 'rev-parse', '--verify', '--quiet', 'HEAD^{commit}'], capture_output=True, check=False)
-    if resolved.returncode == 0:
-        revision = resolved.stdout.decode().strip()
-    else:
-        ref = git(root, 'symbolic-ref', '--quiet', 'HEAD').decode().strip()
-        exists = subprocess.run(['git', '-C', str(root), 'show-ref', '--verify', '--quiet', ref], capture_output=True, check=False)
-        if not ref.startswith('refs/heads/') or exists.returncode != 1:
-            raise Invalid('Cannot resolve repository commit; inspect Git integrity')
-        revision = None  # An unborn branch has content, but no tested commit to invent.
+    revision = head_revision(root)
     return dict(revision=revision,
                 branch=git(root, 'branch', '--show-current').decode().strip(),
                 dirty=revision is None or bool(git(root, 'status', '--porcelain')) or dependency_modified,
