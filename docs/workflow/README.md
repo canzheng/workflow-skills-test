@@ -12,3 +12,13 @@ section links and explicit dependencies. Approve the batch once to make eligible
 work Ready; readiness approval alone never starts implementation. Ask to execute
 separately. Keep later scope and unresolved choices bounded; no per-capability calls,
 engineering-task Issue explosion or duplicate backlog document is required.
+
+Project policy/config, CI/templates, docs/specs, project skills and the
+exact dependency manifest are tracked. Shared workflow skills and Python runtime are ignored repo-local
+dependencies in three skill directories and .agents/tools/workflow. Fresh clones
+fetch the manifest pin and run its source-owned initializer before invoking
+.agents/tools/workflow/workflow.py; neither main/latest nor global tools supply it. Bootstrap the full source pin before
+Ubuntu Codex starts; never fetch main/latest implicitly. Repeat matching bootstrap
+is offline/no-op and preserves project files/index. See [operations](operations.md)
+for adoption, migration, safe bootstrap and optional explicit global installation.
+The workstation/environment is not a hidden workflow version source.

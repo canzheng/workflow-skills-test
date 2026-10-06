@@ -17,5 +17,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      # Trusted base code reads the event and head Git blobs as data only.
-      - run: python3 tools/workflow/workflow.py check --repo . --pr-json "$GITHUB_EVENT_PATH" --metadata-only --json
+      # The base checkout owns the pin; PR head code/pins never select this checker.
+      - name: Prepare pinned workflow checker
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, pathlib, re, subprocess, tempfile
+          root = pathlib.Path.cwd()
+          if (root / '.workflow/install-manifest.json').exists():
+              pin = json.loads((root / '.workflow/install-manifest.json').read_text(encoding='utf-8'))
+              revision, url = pin.get('source_revision'), pin.get('source_url')
+              if not isinstance(revision, str) or not re.fullmatch(r'[0-9a-f]{40}', revision):
+                  raise SystemExit('Workflow source must be an exact commit')
+              if not isinstance(url, str) or not re.fullmatch(r'https://github\.com/[\w.-]+/[\w.-]+', url):
+                  raise SystemExit('Workflow source must be a credential-free GitHub repository')
+              source = pathlib.Path(tempfile.mkdtemp(prefix='wf2-ci-', dir=os.environ['RUNNER_TEMP']))
+              subprocess.run(['git', '-C', str(source), 'init', '--quiet'], check=True)
+              subprocess.run(['git', '-C', str(source), 'fetch', '--no-tags', '--depth=1', url, revision], check=True)
+              subprocess.run(['git', '-C', str(source), 'checkout', '--detach', '--quiet', revision], check=True)
+              checker = source / 'tools/workflow/workflow.py'
+          elif (root / '.workflow/bundle.json').is_file():
+              checker = root / 'tools/workflow/workflow.py'
+          else:
+              raise SystemExit('Workflow provenance missing')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
+              print('WF2_CHECKER=' + str(checker), file=output)
+          PYCODE
+      # Trusted pinned code reads the event and head Git blobs as data only.
+      - run: python3 "$WF2_CHECKER" check --repo . --pr-json "$GITHUB_EVENT_PATH" --metadata-only --json
