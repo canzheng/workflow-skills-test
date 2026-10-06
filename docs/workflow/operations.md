@@ -224,6 +224,20 @@ unavailable default returns structured invalid-input JSON asking for --target.
 Check rejects enumerated Markdown symlinks before reading their content, including
 dangling/cyclic links. It reports the repository-relative path without disclosing
 external document text; regular repository documents still receive link diagnostics.
+
+Read-only file consumers bind each directory and the final file with no-follow
+handles, open nonblocking and require a regular file before reading from that
+descriptor. This prevents pathname substitutions and FIFOs from redirecting or
+blocking Markdown, skill, JSON/policy/integrity and legacy-inventory reads. It
+requires POSIX directory-descriptor/no-follow/nonblocking support; unavailable
+support fails rather than falling back to an unsafe pathname read. Unsupported
+optional catalog entries warn and do not stop other catalogs/tools. Migration
+reports unsafe ledger/feature reads without copying substituted external records.
+Selected OpenSpec checks bound the version probe to 10 seconds and validation to
+120 seconds. Timeout/launch failure is a structured required-check error, never a
+skip/pass; partial timeout output is suppressed. Declared project verification
+commands keep their own intended execution requirements.
+
 Doctor reports an unreadable/undecodable discovery file as a per-file warning and
 continues scanning other entries, including duplicate-name checks. It preserves
 the file; this filesystem scan does not prove native host discovery. Invalid UTF-8
@@ -254,3 +268,10 @@ After replacement, the destination bytes/mode/device/inode must match the staged
 file identity. A swapped staging entry or a changed/missing destination is a
 recoverable conflict, not successful setup. Foreign destination content is retained
 and original bytes/mode are backed up for explicit recovery.
+
+Doctor resolves present skill catalogs strictly across supported Python versions.
+Self, mutual and ancestor symlink cycles or dangling catalog components produce
+per-root warnings and do not block other catalogs/tools. Genuinely absent optional
+roots remain silent. This explicitly handles Python3.14's changed non-strict
+resolution behavior. Source CI verifies Python3.12 and3.14 sequentially under the
+same required-check name; generic consumer CI retains its declared Python3.12 runtime.
