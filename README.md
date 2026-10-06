@@ -6,8 +6,8 @@ test repo for workflow-skills
 [Project design](docs/design.md) is the intent source. The pinned workflow bundle
 is repository-local; read [its contract](docs/workflow/contract.md) and
 [consumer guidance](docs/workflow/README.md). GitHub owns live Issue status.
-Initial setup/CI proves workflow integrity; application verification is added with
-the ingredient-catalog implementation PR. No global skill install or Conda needed.
+CI checks workflow integrity and executes declared application verification.
+[Ingredient CLI/schema/errors/examples](docs/catalog.md) describe implemented pilot behavior. No global skill install or Conda needed.
 
 The three shared skill directories/references and Python helpers in
 `.agents/tools/workflow/` are ignored dependencies from one exact pin.
